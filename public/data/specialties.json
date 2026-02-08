@@ -1,0 +1,342 @@
+[
+  {
+    "id": 92,
+    "name": "Allergologie et immunologie clinique"
+  },
+  {
+    "id": 2,
+    "name": "Anesthésiologie"
+  },
+  {
+    "id": 119,
+    "name": "Angiologie"
+  },
+  {
+    "id": 83,
+    "name": "Cardiologie"
+  },
+  {
+    "id": 114,
+    "name": "Cardiologie pédiatrique"
+  },
+  {
+    "id": 6,
+    "name": "Chirurgie"
+  },
+  {
+    "id": 47,
+    "name": "Chirurgie cardiaque et vasculaire thoracique"
+  },
+  {
+    "id": 12,
+    "name": "Chirurgie cervico-faciale"
+  },
+  {
+    "id": 129,
+    "name": "Chirurgie de la main"
+  },
+  {
+    "id": 57,
+    "name": "Chirurgie orale et maxillo-faciale"
+  },
+  {
+    "id": 31,
+    "name": "Chirurgie orthopédique et traumatologie de l'appareil locomoteur"
+  },
+  {
+    "id": 18,
+    "name": "Chirurgie pédiatrique"
+  },
+  {
+    "id": 37,
+    "name": "Chirurgie plastique, reconstructive et esthétique"
+  },
+  {
+    "id": 138,
+    "name": "Chirurgie thoracique"
+  },
+  {
+    "id": 137,
+    "name": "Chirurgie vasculaire"
+  },
+  {
+    "id": 125,
+    "name": "Cytopathologie"
+  },
+  {
+    "id": 7,
+    "name": "Dermatologie et vénéréologie"
+  },
+  {
+    "id": 156,
+    "name": "Dermatopathologie"
+  },
+  {
+    "id": 214,
+    "name": "Endo-urologie complexe"
+  },
+  {
+    "id": 112,
+    "name": "Endocrinologie-diabétologie pédiatrique"
+  },
+  {
+    "id": 94,
+    "name": "Endocrinologie/diabétologie"
+  },
+  {
+    "id": 85,
+    "name": "Gastroentérologie"
+  },
+  {
+    "id": 113,
+    "name": "Gastroentérologie, hépatologie et nutrition pédiatriques"
+  },
+  {
+    "id": 75,
+    "name": "Génétique médicale"
+  },
+  {
+    "id": 81,
+    "name": "Gériatrie"
+  },
+  {
+    "id": 10,
+    "name": "Gynécologie et obstétrique"
+  },
+  {
+    "id": 155,
+    "name": "Gynécologie-obstétrique opératoire"
+  },
+  {
+    "id": 95,
+    "name": "Hématologie"
+  },
+  {
+    "id": 164,
+    "name": "Hépatologie"
+  },
+  {
+    "id": 74,
+    "name": "Infectiologie"
+  },
+  {
+    "id": 169,
+    "name": "Médecine d'urgence pédiatrique"
+  },
+  {
+    "id": 104,
+    "name": "Médecine de la reproduction et endocrinologie gynécologique"
+  },
+  {
+    "id": 93,
+    "name": "Médecine du travail"
+  },
+  {
+    "id": 121,
+    "name": "Médecine foeto-maternelle"
+  },
+  {
+    "id": 122,
+    "name": "Médecine intensive"
+  },
+  {
+    "id": 162,
+    "name": "Médecine interne générale"
+  },
+  {
+    "id": 9,
+    "name": "Médecine légale"
+  },
+  {
+    "id": 100,
+    "name": "Médecine nucléaire"
+  },
+  {
+    "id": 76,
+    "name": "Médecine pharmaceutique"
+  },
+  {
+    "id": 36,
+    "name": "Médecine physique et réadaptation"
+  },
+  {
+    "id": 41,
+    "name": "Médecine tropicale et médecine des voyages"
+  },
+  {
+    "id": 73,
+    "name": "Néonatologie"
+  },
+  {
+    "id": 98,
+    "name": "Néphrologie"
+  },
+  {
+    "id": 115,
+    "name": "Néphrologie pédiatrique"
+  },
+  {
+    "id": 170,
+    "name": "Neuro-urologie"
+  },
+  {
+    "id": 26,
+    "name": "Neurochirurgie"
+  },
+  {
+    "id": 27,
+    "name": "Neurologie"
+  },
+  {
+    "id": 116,
+    "name": "Neuropédiatrie"
+  },
+  {
+    "id": 107,
+    "name": "Neuroradiologie diagnostique"
+  },
+  {
+    "id": 108,
+    "name": "Neuroradiologie invasive"
+  },
+  {
+    "id": 117,
+    "name": "Onco-hématologie pédiatrique"
+  },
+  {
+    "id": 120,
+    "name": "Oncologie gynécologique"
+  },
+  {
+    "id": 96,
+    "name": "Oncologie médicale"
+  },
+  {
+    "id": 72,
+    "name": "Ophtalmochirurgie"
+  },
+  {
+    "id": 30,
+    "name": "Ophtalmologie"
+  },
+  {
+    "id": 32,
+    "name": "Oto-rhino-laryngologie"
+  },
+  {
+    "id": 34,
+    "name": "Pathologie"
+  },
+  {
+    "id": 123,
+    "name": "Pathologie moléculaire"
+  },
+  {
+    "id": 59,
+    "name": "Pédiatrie"
+  },
+  {
+    "id": 159,
+    "name": "Pédiatrie du développement"
+  },
+  {
+    "id": 102,
+    "name": "Pharmacologie et toxicologie cliniques"
+  },
+  {
+    "id": 35,
+    "name": "Phoniatrie"
+  },
+  {
+    "id": 99,
+    "name": "Pneumologie"
+  },
+  {
+    "id": 118,
+    "name": "Pneumologie pédiatrique"
+  },
+  {
+    "id": 186,
+    "name": "Prévention et contrôle des infections dans le secteur de la santé"
+  },
+  {
+    "id": 38,
+    "name": "Prévention et santé publique"
+  },
+  {
+    "id": 160,
+    "name": "Psychiatrie de consultation et de liaison"
+  },
+  {
+    "id": 39,
+    "name": "Psychiatrie et psychothérapie"
+  },
+  {
+    "id": 19,
+    "name": "Psychiatrie et psychothérapie d'enfants et d'adolescents"
+  },
+  {
+    "id": 153,
+    "name": "Psychiatrie et psychothérapie de la personne âgée"
+  },
+  {
+    "id": 176,
+    "name": "Psychiatrie et psychothérapie des addictions"
+  },
+  {
+    "id": 168,
+    "name": "Psychiatrie et psychothérapie forensique"
+  },
+  {
+    "id": 167,
+    "name": "Psychiatrie et psychothérapie forensique pour enfants et adolescents"
+  },
+  {
+    "id": 103,
+    "name": "Radio-oncologie / radiothérapie"
+  },
+  {
+    "id": 101,
+    "name": "Radiologie"
+  },
+  {
+    "id": 105,
+    "name": "Radiologie pédiatrique"
+  },
+  {
+    "id": 126,
+    "name": "Rhumatologie"
+  },
+  {
+    "id": 157,
+    "name": "Rhumatologie pédiatrique"
+  },
+  {
+    "id": 189,
+    "name": "Sénologie chirurgicale"
+  },
+  {
+    "id": 188,
+    "name": "Sénologie gynécologique"
+  },
+  {
+    "id": 215,
+    "name": "Uro-oncologie"
+  },
+  {
+    "id": 173,
+    "name": "Urogynécologie"
+  },
+  {
+    "id": 42,
+    "name": "Urologie"
+  },
+  {
+    "id": 172,
+    "name": "Urologie de la femme"
+  },
+  {
+    "id": 216,
+    "name": "Urologie reconstructive"
+  }
+]
