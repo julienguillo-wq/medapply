@@ -26,23 +26,33 @@ export function AuthProvider({ children }) {
 
   // Charger le profil utilisateur depuis la table profiles
   async function loadProfile(userId) {
-    console.log('[AuthContext] loadProfile appelé pour userId:', userId);
+    console.log('[AuthContext] loadProfile START pour userId:', userId);
     try {
-      const { data, error } = await supabase
+      const query = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
+      console.log('[AuthContext] requête Supabase lancée, en attente de réponse...');
+
+      // Timeout de 5s sur la requête elle-même
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('loadProfile timeout après 5s')), 5000)
+      );
+
+      const { data, error } = await Promise.race([query, timeout]);
+
+      console.log('[AuthContext] requête Supabase terminée :', { data, error });
+
       if (error) {
-        // PGRST116 = 0 rows → le profil n'existe pas encore (trigger a échoué)
         console.warn('[AuthContext] Profil non trouvé ou erreur:', error.code, error.message);
         return null;
       }
       console.log('[AuthContext] Profil chargé:', data?.email || data?.id);
       return data;
     } catch (err) {
-      console.error('[AuthContext] Erreur inattendue loadProfile:', err);
+      console.error('[AuthContext] loadProfile ERREUR:', err.message || err);
       return null;
     }
   }
