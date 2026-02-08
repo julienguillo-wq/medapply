@@ -20,6 +20,7 @@ export default function ApplicationModal({ establishment, existingCandidature, o
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState(null); // { type: 'success'|'error', text }
   const [hasSmtpConfig, setHasSmtpConfig] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState(existingCandidature?.director_email || emailInfo.email || '');
 
   // Vérifier si l'utilisateur a configuré son email SMTP
   useEffect(() => {
@@ -102,7 +103,7 @@ La lettre doit être personnalisée pour cet établissement et cette spécialit�
       if (existingCandidature?.id) {
         result = await updateCandidature(existingCandidature.id, {
           motivation_letter: letter,
-          director_email: emailInfo.email || '',
+          director_email: recipientEmail,
         });
       } else {
         result = await createCandidature(user.id, {
@@ -111,7 +112,7 @@ La lettre doit être personnalisée pour cet établissement et cette spécialit�
           establishment_city: establishment.city || '',
           establishment_canton: establishment.canton || '',
           director_name: directorClean,
-          director_email: emailInfo.email || '',
+          director_email: recipientEmail,
           specialty: establishment.specialty || '',
           status: 'draft',
           motivation_letter: letter,
@@ -128,7 +129,7 @@ La lettre doit être personnalisée pour cet établissement et cette spécialit�
   }
 
   async function handleSendEmail() {
-    const emailTo = emailInfo.email || '';
+    const emailTo = recipientEmail;
     const subject = `Candidature spontanée - ${establishment.specialty || 'Médecine'} - Dr ${userName}`;
 
     // Si pas de config SMTP, fallback sur mailto
@@ -307,6 +308,29 @@ La lettre doit être personnalisée pour cet établissement et cette spécialit�
 
         {letter && !generating && (
           <div>
+            {/* Editable recipient email */}
+            <div className="mb-4">
+              <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Email du destinataire</label>
+              <div className="relative">
+                <Icon.Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="email"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  placeholder="email@exemple.com"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              {emailInfo.email && recipientEmail !== emailInfo.email && (
+                <button
+                  onClick={() => setRecipientEmail(emailInfo.email)}
+                  className="text-xs text-primary hover:underline mt-1 cursor-pointer"
+                >
+                  Rétablir l&apos;email suggéré ({emailInfo.email})
+                </button>
+              )}
+            </div>
+
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-semibold text-gray-700">Lettre de motivation</label>
               <Button
@@ -363,7 +387,7 @@ La lettre doit être personnalisée pour cet établissement et cette spécialit�
               </Button>
               <Button
                 onClick={handleSendEmail}
-                disabled={saving || sending || !emailInfo.email}
+                disabled={saving || sending || !recipientEmail}
                 icon={<Icon.Send size={16} />}
                 className="flex-1"
               >
