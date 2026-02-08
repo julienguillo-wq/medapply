@@ -13,6 +13,42 @@ const allQuestions = [
   { key: 'experience', q: "Décrivez brièvement votre parcours." },
 ];
 
+// Extract only the relevant data from a conversational answer
+function extractValue(key, raw) {
+  const text = raw.trim();
+
+  switch (key) {
+    case 'phone': {
+      const match = text.match(/\+?[\d\s.\-()]{6,}/);
+      return match ? match[0].replace(/[\s.\-()]/g, '') : text;
+    }
+    case 'email': {
+      const match = text.match(/[\w.\-+]+@[\w.\-]+\.\w+/);
+      return match ? match[0] : text;
+    }
+    case 'name': {
+      return text
+        .replace(/^(je m'appelle|mon nom (complet )?(est |c'est )|c'est |moi c'est |dr\.?\s*)/i, '')
+        .replace(/[.,!]+$/, '')
+        .trim() || text;
+    }
+    case 'specialty': {
+      return text
+        .replace(/^(je vise |ma spécialité (est |c'est )|en |je suis en |j'aimerais |je souhaite )/i, '')
+        .replace(/[.,!]+$/, '')
+        .trim() || text;
+    }
+    case 'currentPosition': {
+      return text
+        .replace(/^(je suis (actuellement )?(un |une )?|actuellement |mon poste (est |actuel est )|je travaille (comme |en tant que ))/i, '')
+        .replace(/[.,!]+$/, '')
+        .trim() || text;
+    }
+    default:
+      return text;
+  }
+}
+
 // Map Supabase profile fields to local profile keys
 function buildProfileFromAuth(authProfile) {
   if (!authProfile) return {};
@@ -96,7 +132,8 @@ export default function ProfilePage() {
     setMessages(prev => [...prev, { role: 'user', content: input }]);
 
     const currentQuestion = remainingQuestions[step];
-    const updatedProfile = { ...profile, [currentQuestion.key]: input };
+    const extracted = extractValue(currentQuestion.key, input);
+    const updatedProfile = { ...profile, [currentQuestion.key]: extracted };
     setProfile(updatedProfile);
 
     const nextStep = step + 1;
