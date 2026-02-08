@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Authentification - MedApply</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwindcss.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            primary: { DEFAULT: '#0066FF', light: '#3384FF', dark: '#0052CC', bg: '#EBF3FF' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .animate-spin { animation: spin 1s linear infinite; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade { animation: fadeIn 0.4s ease-out; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 font-sans flex items-center justify-center px-4">
+
+  <div class="w-full max-w-md animate-fade text-center">
+    <!-- Logo -->
+    <div class="w-14 h-14 mx-auto mb-6 bg-gradient-to-br from-primary to-primary-dark rounded-2xl flex items-center justify-center shadow-lg shadow-primary/25">
+      <span class="text-white font-bold text-2xl">M</span>
+    </div>
+
+    <!-- État de chargement -->
+    <div id="loading-state">
+      <div class="flex items-center justify-center gap-3 mb-4">
+        <svg class="animate-spin h-6 w-6 text-primary" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        <span class="text-gray-600 font-medium">Authentification en cours...</span>
+      </div>
+      <p class="text-sm text-gray-400">Vous allez être redirigé automatiquement</p>
+    </div>
+
+    <!-- État d'erreur (masqué par défaut) -->
+    <div id="error-state" class="hidden">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div class="w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
+        </div>
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">Erreur d'authentification</h2>
+        <p id="error-message" class="text-sm text-gray-500 mb-6">Une erreur est survenue lors de la connexion.</p>
+        <a
+          href="/login.html"
+          class="inline-block py-3 px-6 bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl transition-colors text-sm"
+        >
+          Retour à la connexion
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/supabase-config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Initialiser le client Supabase
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    // Traiter le callback OAuth
+    (async () => {
+      try {
+        // Supabase gère automatiquement les fragments d'URL (#access_token=...)
+        // et les code verifiers pour PKCE
+        const { data: { session }, error } = await sb.auth.getSession();
+
+        if (error) throw error;
+
+        if (session) {
+          // Session valide → rediriger vers l'application
+          window.location.href = '/';
+        } else {
+          // Pas de session, vérifier les paramètres d'URL pour les erreurs
+          const params = new URLSearchParams(window.location.search);
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+
+          const errorDescription = params.get('error_description') || hashParams.get('error_description');
+
+          if (errorDescription) {
+            throw new Error(errorDescription);
+          }
+
+          // Attendre un court instant pour que Supabase traite les tokens
+          setTimeout(async () => {
+            const { data: { session: retrySession } } = await sb.auth.getSession();
+            if (retrySession) {
+              window.location.href = '/';
+            } else {
+              throw new Error('Impossible de récupérer la session. Veuillez réessayer.');
+            }
+          }, 1000);
+        }
+      } catch (err) {
+        // Afficher l'erreur
+        document.getElementById('loading-state').classList.add('hidden');
+        document.getElementById('error-state').classList.remove('hidden');
+        document.getElementById('error-message').textContent = err.message || 'Une erreur inattendue est survenue.';
+      }
+    })();
+  </script>
+</body>
+</html>
