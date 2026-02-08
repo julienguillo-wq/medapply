@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>MedApply</title>
+    <!-- Configuration Supabase : DOIT être dans <head> pour s'exécuter avant les modules ES -->
+    <script src="/js/supabase-config.js"></script>
   </head>
   <body>
     <div id="root"></div>
-    <!-- Configuration Supabase (chargée avant le bundle React) -->
-    <script src="/js/supabase-config.js"></script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
