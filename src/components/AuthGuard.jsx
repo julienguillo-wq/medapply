@@ -5,10 +5,18 @@
 // Affiche un écran de chargement pendant la vérification
 // ============================================================
 
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function AuthGuard({ children }) {
   const { isAuthenticated, loading } = useAuth();
+  const [showTimeout, setShowTimeout] = useState(false);
+
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setTimeout(() => setShowTimeout(true), 8000);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   // Afficher un écran de chargement pendant la vérification de la session
   if (loading) {
@@ -25,6 +33,17 @@ export default function AuthGuard({ children }) {
             </svg>
             <span className="text-sm font-medium">Chargement...</span>
           </div>
+          {showTimeout && (
+            <div className="mt-4 text-sm text-gray-400">
+              <p>La connexion prend plus de temps que prévu.</p>
+              <button
+                onClick={() => window.location.href = '/login.html'}
+                className="mt-2 text-primary hover:underline"
+              >
+                Retour à la connexion
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -11,6 +11,11 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = window.SUPABASE_URL;
 const supabaseAnonKey = window.SUPABASE_ANON_KEY;
 
+console.log('[Supabase] Config:', {
+  url: supabaseUrl ? '✓ défini' : '✗ MANQUANT',
+  key: supabaseAnonKey ? `✓ défini (${supabaseAnonKey.substring(0, 10)}...)` : '✗ MANQUANT',
+});
+
 if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('VOTRE_PROJET')) {
   console.error(
     '⚠️ MedApply : Supabase non configuré.\n' +
@@ -19,7 +24,7 @@ if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('VOTRE_PROJET')) {
 }
 
 // Créer le client Supabase avec refresh automatique des tokens
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
   auth: {
     autoRefreshToken: true,
     persistSession: true,

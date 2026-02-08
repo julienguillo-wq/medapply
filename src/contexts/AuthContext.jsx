@@ -26,6 +26,7 @@ export function AuthProvider({ children }) {
 
   // Charger le profil utilisateur depuis la table profiles
   async function loadProfile(userId) {
+    console.log('[AuthContext] loadProfile appelé pour userId:', userId);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -34,54 +35,91 @@ export function AuthProvider({ children }) {
         .single();
 
       if (error) {
-        console.error('Erreur chargement profil:', error.message);
+        // PGRST116 = 0 rows → le profil n'existe pas encore (trigger a échoué)
+        console.warn('[AuthContext] Profil non trouvé ou erreur:', error.code, error.message);
         return null;
       }
+      console.log('[AuthContext] Profil chargé:', data?.email || data?.id);
       return data;
     } catch (err) {
-      console.error('Erreur inattendue chargement profil:', err);
+      console.error('[AuthContext] Erreur inattendue loadProfile:', err);
       return null;
     }
   }
 
   useEffect(() => {
+    let isMounted = true;
+
     // Vérifier la session existante au chargement
     async function initAuth() {
+      console.log('[AuthContext] initAuth démarré');
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log('[AuthContext] Appel getSession...');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-        if (session?.user) {
+        if (sessionError) {
+          console.error('[AuthContext] Erreur getSession:', sessionError.message);
+        }
+
+        console.log('[AuthContext] Session:', session ? `trouvée (${session.user.email})` : 'aucune');
+
+        if (session?.user && isMounted) {
           setUser(session.user);
           const profileData = await loadProfile(session.user.id);
-          setProfile(profileData);
+          if (isMounted) {
+            setProfile(profileData);
+          }
         }
       } catch (err) {
-        console.error('Erreur initialisation auth:', err);
+        console.error('[AuthContext] Erreur initAuth:', err);
       } finally {
-        setLoading(false);
+        console.log('[AuthContext] initAuth terminé → loading = false');
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
 
     initAuth();
 
+    // Safety timeout : si initAuth prend plus de 10s, forcer loading à false
+    const safetyTimeout = setTimeout(() => {
+      if (isMounted && loading) {
+        console.warn('[AuthContext] ⚠️ Safety timeout (10s) — loading forcé à false');
+        setLoading(false);
+      }
+    }, 10000);
+
     // Écouter les changements d'état d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          setUser(session.user);
-          const profileData = await loadProfile(session.user.id);
-          setProfile(profileData);
+        console.log('[AuthContext] onAuthStateChange:', event, session?.user?.email);
+
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+          if (isMounted) {
+            setUser(session.user);
+            const profileData = await loadProfile(session.user.id);
+            if (isMounted) {
+              setProfile(profileData);
+            }
+          }
         } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setProfile(null);
+          if (isMounted) {
+            setUser(null);
+            setProfile(null);
+          }
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          setUser(session.user);
+          if (isMounted) {
+            setUser(session.user);
+          }
         }
       }
     );
 
     // Nettoyer l'abonnement au démontage
     return () => {
+      isMounted = false;
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
   }, []);
