@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { cvData as defaultCvData } from '../data/mockData';
 import { useAuth } from '../contexts/AuthContext';
+import { getDocuments } from '../services/documentsService';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
@@ -52,13 +54,34 @@ function RemoveButton({ onClick }) {
   );
 }
 
+const CV_DOC_CATEGORIES = [
+  { id: 'diplome', label: 'Diplômes', icon: Icon.GraduationCap },
+  { id: 'certification', label: 'Certifications', icon: Icon.Award },
+  { id: 'cv', label: 'CV uploadés', icon: Icon.FileText },
+];
+
 export default function CVPage() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [cv, setCv] = useState(() => loadCV() || defaultCvData);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(null);
+  const [cvDocs, setCvDocs] = useState([]);
 
   useEffect(() => { saveCV(cv); }, [cv]);
+
+  // Charger les documents pertinents pour le CV
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    async function loadDocs() {
+      const { data } = await getDocuments(user.id);
+      if (!cancelled && data) {
+        setCvDocs(data.filter(d => ['diplome', 'certification', 'cv'].includes(d.category)));
+      }
+    }
+    loadDocs();
+    return () => { cancelled = true; };
+  }, [user]);
 
   // Données d'identité et contact issues du profil Supabase
   const profileName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ');
@@ -389,6 +412,37 @@ export default function CVPage() {
           </Card>
         </div>
       </div>
+
+      {/* Documents joints */}
+      {cvDocs.length > 0 && (
+        <Card className="mt-6">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Documents joints</h3>
+            <Link to="/documents" className="text-xs font-semibold text-primary hover:text-primary-dark transition-colors">
+              Voir tous les documents
+            </Link>
+          </div>
+          <div className="flex flex-col gap-2">
+            {CV_DOC_CATEGORIES.map(cat => {
+              const docs = cvDocs.filter(d => d.category === cat.id);
+              if (docs.length === 0) return null;
+              const CatIcon = cat.icon;
+              return (
+                <div key={cat.id} className="flex items-center gap-3 py-2.5 px-3 rounded-lg bg-gray-50">
+                  <div className="w-8 h-8 rounded-lg bg-primary-bg text-primary flex items-center justify-center flex-shrink-0">
+                    <CatIcon size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium">{cat.label}</span>
+                    <span className="text-xs text-gray-400 ml-2">{docs.length} fichier{docs.length > 1 ? 's' : ''}</span>
+                  </div>
+                  <Icon.Check size={16} className="text-success flex-shrink-0" />
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
