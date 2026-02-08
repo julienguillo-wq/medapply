@@ -4,26 +4,91 @@ import {
   uploadDocument,
   getDocuments,
   deleteDocument,
+  renameDocument,
   getSignedUrl,
 } from '../services/documentsService';
 import Card from '../components/Card';
-import Button from '../components/Button';
-import Badge from '../components/Badge';
 import { Icon } from '../components/Icons';
 
-// --- Catégories ---
+// --- Catégories (ordre demandé) ---
 const CATEGORIES = [
-  { id: 'diplome', label: 'Diplômes', icon: Icon.GraduationCap, color: 'text-primary', bg: 'bg-primary-bg' },
-  { id: 'certification', label: 'Certifications', icon: Icon.Award, color: 'text-amber-700', bg: 'bg-warning-bg' },
-  { id: 'lettre_recommandation', label: 'Lettres de recommandation', icon: Icon.Star, color: 'text-purple-700', bg: 'bg-purple-50' },
-  { id: 'cv', label: 'CV', icon: Icon.FileText, color: 'text-emerald-700', bg: 'bg-success-bg' },
-  { id: 'attestation', label: 'Attestations', icon: Icon.Briefcase, color: 'text-blue-700', bg: 'bg-blue-50' },
-  { id: 'autre', label: 'Autres', icon: Icon.File, color: 'text-gray-600', bg: 'bg-gray-100' },
+  {
+    id: 'diplome',
+    label: 'Diplômes',
+    description: 'Diplômes de médecine, spécialisations',
+    icon: Icon.GraduationCap,
+    iconBg: 'bg-blue-100',
+    iconText: 'text-blue-600',
+    badgeBg: 'bg-blue-100 text-blue-700',
+    accent: 'border-l-blue-500',
+    dropActiveBg: 'bg-blue-50',
+    dropActiveBorder: 'border-blue-400',
+  },
+  {
+    id: 'attestation',
+    label: 'Attestations',
+    description: 'Attestations de travail, stages',
+    icon: Icon.Briefcase,
+    iconBg: 'bg-indigo-100',
+    iconText: 'text-indigo-600',
+    badgeBg: 'bg-indigo-100 text-indigo-700',
+    accent: 'border-l-indigo-500',
+    dropActiveBg: 'bg-indigo-50',
+    dropActiveBorder: 'border-indigo-400',
+  },
+  {
+    id: 'certification',
+    label: 'Certifications',
+    description: 'Certifications professionnelles',
+    icon: Icon.Award,
+    iconBg: 'bg-amber-100',
+    iconText: 'text-amber-600',
+    badgeBg: 'bg-amber-100 text-amber-700',
+    accent: 'border-l-amber-500',
+    dropActiveBg: 'bg-amber-50',
+    dropActiveBorder: 'border-amber-400',
+  },
+  {
+    id: 'lettre_recommandation',
+    label: 'Lettres de recommandation',
+    description: 'Lettres de référence, recommandations',
+    icon: Icon.Star,
+    iconBg: 'bg-purple-100',
+    iconText: 'text-purple-600',
+    badgeBg: 'bg-purple-100 text-purple-700',
+    accent: 'border-l-purple-500',
+    dropActiveBg: 'bg-purple-50',
+    dropActiveBorder: 'border-purple-400',
+  },
+  {
+    id: 'cv',
+    label: 'CV',
+    description: 'Curriculum Vitae',
+    icon: Icon.FileText,
+    iconBg: 'bg-emerald-100',
+    iconText: 'text-emerald-600',
+    badgeBg: 'bg-emerald-100 text-emerald-700',
+    accent: 'border-l-emerald-500',
+    dropActiveBg: 'bg-emerald-50',
+    dropActiveBorder: 'border-emerald-400',
+  },
+  {
+    id: 'autre',
+    label: 'Autres',
+    description: 'Documents divers',
+    icon: Icon.File,
+    iconBg: 'bg-gray-200',
+    iconText: 'text-gray-600',
+    badgeBg: 'bg-gray-200 text-gray-600',
+    accent: 'border-l-gray-400',
+    dropActiveBg: 'bg-gray-100',
+    dropActiveBorder: 'border-gray-400',
+  },
 ];
 
 const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 const ACCEPTED_EXT = '.pdf,.jpg,.jpeg,.png';
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_SIZE = 10 * 1024 * 1024;
 
 function formatFileSize(bytes) {
   if (bytes < 1024) return `${bytes} o`;
@@ -39,7 +104,268 @@ function formatDate(dateStr) {
   });
 }
 
-// --- Composant DropZone par catégorie ---
+// --- Modale de nommage avant upload ---
+function UploadNameForm({ files, category, onConfirm, onCancel }) {
+  const [names, setNames] = useState(
+    files.map(f => f.name.replace(/\.[^/.]+$/, ''))
+  );
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const finalNames = names.map((n, i) =>
+      n.trim() || files[i].name.replace(/\.[^/.]+$/, '')
+    );
+    onConfirm(finalNames);
+  };
+
+  const CatIcon = category.icon;
+
+  return (
+    <div
+      className="bg-white rounded-2xl border border-gray-200 shadow-2xl p-6 w-full max-w-md animate-scale"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-center gap-3 mb-5">
+        <div className={`w-10 h-10 rounded-xl ${category.iconBg} ${category.iconText} flex items-center justify-center`}>
+          <CatIcon size={20} />
+        </div>
+        <div>
+          <div className="text-base font-semibold">
+            Nommer {files.length > 1 ? 'les documents' : 'le document'}
+          </div>
+          <div className="text-xs text-gray-400">{category.label}</div>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {files.map((file, i) => (
+          <div key={i}>
+            <label className="text-xs text-gray-500 mb-1.5 block flex items-center gap-1.5">
+              <Icon.File size={12} />
+              {file.name} ({formatFileSize(file.size)})
+            </label>
+            <input
+              ref={i === 0 ? inputRef : undefined}
+              type="text"
+              value={names[i]}
+              onChange={e => {
+                const next = [...names];
+                next[i] = e.target.value;
+                setNames(next);
+              }}
+              placeholder="Nom du document"
+              className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary-bg outline-none transition-all"
+            />
+          </div>
+        ))}
+
+        <div className="flex items-center gap-2 mt-1">
+          <button
+            type="submit"
+            className="flex-1 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary-dark transition-colors cursor-pointer flex items-center justify-center gap-2"
+          >
+            <Icon.Upload size={15} />
+            Envoyer
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+          >
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// --- Barre de progression ---
+function UploadProgress({ fileName, progress }) {
+  return (
+    <div className="flex items-center gap-3 py-2.5 px-3 bg-blue-50 rounded-xl animate-fade">
+      <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+        <Icon.Cloud size={16} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate">{fileName}</div>
+        <div className="h-1.5 bg-white rounded-full overflow-hidden mt-1.5">
+          <div
+            className="h-full bg-primary rounded-full transition-[width] duration-200"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+      <span className="text-xs text-blue-600 font-semibold flex-shrink-0">{progress}%</span>
+    </div>
+  );
+}
+
+// --- Message de succès ---
+function UploadSuccess({ name }) {
+  return (
+    <div className="flex items-center gap-3 py-2.5 px-3 bg-emerald-50 text-emerald-700 rounded-xl animate-fade">
+      <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+        <Icon.Check size={16} />
+      </div>
+      <div className="text-sm font-medium truncate">&laquo; {name} &raquo; ajouté avec succès</div>
+    </div>
+  );
+}
+
+// --- Confirmation de suppression ---
+function DeleteConfirm({ docName, onConfirm, onCancel, deleting }) {
+  return (
+    <div className="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-lg flex items-center justify-center gap-2 px-3 z-10 animate-fade">
+      <span className="text-sm text-gray-700 truncate max-w-[40%]">
+        Supprimer &laquo; {docName} &raquo; ?
+      </span>
+      <button
+        onClick={onConfirm}
+        disabled={deleting}
+        className="px-3 py-1.5 text-xs font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors cursor-pointer disabled:opacity-50"
+      >
+        {deleting ? '...' : 'Confirmer'}
+      </button>
+      <button
+        onClick={onCancel}
+        className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+      >
+        Annuler
+      </button>
+    </div>
+  );
+}
+
+// --- Ligne de fichier ---
+function FileRow({ doc, onDelete, onDownload, onPreview, onRename }) {
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [newName, setNewName] = useState(doc.name);
+  const renameRef = useRef(null);
+
+  const isPdf = doc.mime_type === 'application/pdf';
+  const isImage = doc.mime_type?.startsWith('image/');
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    await onDelete(doc.id, doc.file_path);
+    setDeleting(false);
+    setShowDelete(false);
+  };
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    await onDownload(doc.file_path, doc.name);
+    setDownloading(false);
+  };
+
+  const handleRenameSubmit = async () => {
+    const trimmed = newName.trim();
+    if (trimmed && trimmed !== doc.name) {
+      await onRename(doc.id, trimmed);
+    }
+    setIsRenaming(false);
+  };
+
+  const handleRenameKeyDown = (e) => {
+    if (e.key === 'Enter') handleRenameSubmit();
+    if (e.key === 'Escape') {
+      setIsRenaming(false);
+      setNewName(doc.name);
+    }
+  };
+
+  useEffect(() => {
+    if (isRenaming) {
+      renameRef.current?.focus();
+      renameRef.current?.select();
+    }
+  }, [isRenaming]);
+
+  return (
+    <div className="flex items-center gap-3 py-3 px-3 rounded-lg hover:bg-gray-50/80 transition-colors group relative">
+      {showDelete && (
+        <DeleteConfirm
+          docName={doc.name}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDelete(false)}
+          deleting={deleting}
+        />
+      )}
+
+      {/* Icône type fichier */}
+      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+        isPdf ? 'bg-red-50 text-red-500' : isImage ? 'bg-violet-50 text-violet-500' : 'bg-gray-100 text-gray-400'
+      }`}>
+        {isPdf ? <Icon.FileText size={18} /> : isImage ? <Icon.Eye size={18} /> : <Icon.File size={18} />}
+      </div>
+
+      {/* Infos fichier */}
+      <div className="flex-1 min-w-0">
+        {isRenaming ? (
+          <input
+            ref={renameRef}
+            type="text"
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onBlur={handleRenameSubmit}
+            onKeyDown={handleRenameKeyDown}
+            className="w-full px-2 py-1 text-sm font-medium rounded-lg border border-primary focus:ring-2 focus:ring-primary-bg outline-none"
+          />
+        ) : (
+          <div className="text-sm font-medium truncate">{doc.name}</div>
+        )}
+        <div className="text-xs text-gray-400 mt-0.5">
+          {formatFileSize(doc.file_size)} — {formatDate(doc.uploaded_at)}
+        </div>
+      </div>
+
+      {/* Actions (visible au hover desktop, toujours visible mobile) */}
+      <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => onPreview(doc.file_path)}
+          className="p-2 rounded-lg text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-all cursor-pointer"
+          title="Prévisualiser"
+        >
+          <Icon.Eye size={15} />
+        </button>
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all cursor-pointer disabled:opacity-50"
+          title="Télécharger"
+        >
+          <Icon.Download size={15} />
+        </button>
+        <button
+          onClick={() => { setNewName(doc.name); setIsRenaming(true); }}
+          className="p-2 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-all cursor-pointer"
+          title="Renommer"
+        >
+          <Icon.Edit size={15} />
+        </button>
+        <button
+          onClick={() => setShowDelete(true)}
+          className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all cursor-pointer"
+          title="Supprimer"
+        >
+          <Icon.Trash size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// --- Zone de drop ---
 function CategoryDropZone({ category, onFilesSelected }) {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef(null);
@@ -62,8 +388,6 @@ function CategoryDropZone({ category, onFilesSelected }) {
     e.target.value = '';
   };
 
-  const CatIcon = category.icon;
-
   return (
     <div
       onDragEnter={handleDragIn}
@@ -71,8 +395,10 @@ function CategoryDropZone({ category, onFilesSelected }) {
       onDragOver={handleDrag}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
-      className={`border-2 border-dashed rounded-xl py-5 px-4 text-center transition-all duration-200 cursor-pointer ${
-        isDragging ? 'bg-primary-bg border-primary scale-[1.01]' : 'bg-gray-50/50 border-gray-200 hover:border-gray-300'
+      className={`border-2 border-dashed rounded-xl py-4 px-4 text-center transition-all duration-200 cursor-pointer ${
+        isDragging
+          ? `${category.dropActiveBg} ${category.dropActiveBorder} scale-[1.02] animate-drop-pulse`
+          : 'bg-gray-50/50 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
       }`}
     >
       <input
@@ -83,89 +409,11 @@ function CategoryDropZone({ category, onFilesSelected }) {
         multiple
         onChange={handleInputChange}
       />
-      <div className={`w-10 h-10 rounded-xl ${isDragging ? 'bg-primary text-white' : category.bg + ' ' + category.color} flex items-center justify-center mx-auto mb-2 transition-all`}>
-        <CatIcon size={20} />
-      </div>
-      <div className="text-sm text-gray-600">
-        {isDragging ? 'Déposez ici' : 'Glissez-déposez ou cliquez'}
+      <div className={`flex items-center justify-center gap-2 text-sm ${isDragging ? category.iconText + ' font-medium' : 'text-gray-500'}`}>
+        <Icon.Upload size={16} />
+        <span>{isDragging ? 'Déposez ici' : 'Glissez-déposez ou cliquez pour ajouter'}</span>
       </div>
       <div className="text-xs text-gray-400 mt-1">PDF, JPG, PNG — Max 10 Mo</div>
-    </div>
-  );
-}
-
-// --- Composant barre de progression ---
-function UploadProgress({ fileName, progress }) {
-  return (
-    <div className="flex items-center gap-3 py-2.5 px-3 bg-primary-bg/50 rounded-lg animate-fade">
-      <div className="w-8 h-8 rounded-lg bg-primary-bg flex items-center justify-center text-primary flex-shrink-0">
-        <Icon.Cloud size={16} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium truncate">{fileName}</div>
-        <div className="h-1.5 bg-white rounded-full overflow-hidden mt-1.5">
-          <div
-            className="h-full bg-primary rounded-full transition-[width] duration-200"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-      <span className="text-xs text-primary font-semibold flex-shrink-0">{progress}%</span>
-    </div>
-  );
-}
-
-// --- Composant ligne de fichier ---
-function FileRow({ doc, onDelete, onDownload }) {
-  const [deleting, setDeleting] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-
-  const isPdf = doc.mime_type === 'application/pdf';
-  const isImage = doc.mime_type?.startsWith('image/');
-
-  const handleDelete = async () => {
-    setDeleting(true);
-    await onDelete(doc.id, doc.file_path);
-    setDeleting(false);
-  };
-
-  const handleDownload = async () => {
-    setDownloading(true);
-    await onDownload(doc.file_path, doc.file_name);
-    setDownloading(false);
-  };
-
-  return (
-    <div className="flex items-center gap-3 py-3 px-3 rounded-lg hover:bg-gray-50 transition-colors group">
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-        isPdf ? 'bg-red-50 text-red-600' : isImage ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'
-      }`}>
-        {isPdf ? <Icon.FileText size={18} /> : isImage ? <Icon.Eye size={18} /> : <Icon.File size={18} />}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium truncate">{doc.name}</div>
-        <div className="text-xs text-gray-400">
-          {formatFileSize(doc.file_size)} — {formatDate(doc.uploaded_at)}
-        </div>
-      </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={handleDownload}
-          disabled={downloading}
-          className="p-2 rounded-lg text-gray-400 hover:text-primary hover:bg-primary-bg transition-all cursor-pointer disabled:opacity-50"
-          title="Télécharger"
-        >
-          <Icon.Download size={16} />
-        </button>
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="p-2 rounded-lg text-gray-400 hover:text-error hover:bg-error-bg transition-all cursor-pointer disabled:opacity-50"
-          title="Supprimer"
-        >
-          <Icon.Trash size={16} />
-        </button>
-      </div>
     </div>
   );
 }
@@ -175,8 +423,10 @@ export default function DocumentsPage() {
   const { user } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [uploads, setUploads] = useState({}); // { [tempId]: { fileName, progress, category } }
+  const [uploads, setUploads] = useState({});
+  const [successes, setSuccesses] = useState([]);
   const [errors, setErrors] = useState([]);
+  const [pendingFiles, setPendingFiles] = useState(null); // { categoryId, files }
 
   // Chargement initial
   useEffect(() => {
@@ -196,7 +446,7 @@ export default function DocumentsPage() {
     return () => { cancelled = true; };
   }, [user]);
 
-  // Validation fichier
+  // Validation
   const validateFile = (file) => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
       return `"${file.name}" : format non accepté (PDF, JPG, PNG uniquement)`;
@@ -207,11 +457,8 @@ export default function DocumentsPage() {
     return null;
   };
 
-  // Upload de fichiers pour une catégorie
-  const handleFilesSelected = useCallback(async (categoryId, files) => {
-    if (!user) return;
-
-    // Valider tous les fichiers
+  // Étape 1 : fichiers sélectionnés → afficher le formulaire de nommage
+  const handleFilesSelected = useCallback((categoryId, files) => {
     const newErrors = [];
     const validFiles = [];
     for (const file of files) {
@@ -225,21 +472,38 @@ export default function DocumentsPage() {
       setTimeout(() => setErrors([]), 5000);
     }
 
-    // Uploader chaque fichier valide
-    for (const file of validFiles) {
+    if (validFiles.length > 0) {
+      setPendingFiles({ categoryId, files: validFiles });
+    }
+  }, []);
+
+  // Étape 2 : noms confirmés → lancer l'upload
+  const handleUploadConfirm = useCallback(async (names) => {
+    if (!user || !pendingFiles) return;
+    const { categoryId, files } = pendingFiles;
+    setPendingFiles(null);
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const displayName = names[i];
       const tempId = `upload_${Date.now()}_${Math.random()}`;
 
-      // Afficher la progression simulée
-      setUploads(prev => ({ ...prev, [tempId]: { fileName: file.name, progress: 0, category: categoryId } }));
+      setUploads(prev => ({
+        ...prev,
+        [tempId]: { fileName: displayName, progress: 0, category: categoryId },
+      }));
 
-      // Simuler la progression (Supabase Storage n'a pas de callback de progression)
       let progress = 0;
       const progressInterval = setInterval(() => {
         progress = Math.min(progress + Math.random() * 20 + 5, 90);
-        setUploads(prev => prev[tempId] ? { ...prev, [tempId]: { ...prev[tempId], progress: Math.round(progress) } } : prev);
+        setUploads(prev =>
+          prev[tempId]
+            ? { ...prev, [tempId]: { ...prev[tempId], progress: Math.round(progress) } }
+            : prev
+        );
       }, 200);
 
-      const { data, error } = await uploadDocument(user.id, categoryId, file, file.name);
+      const { data, error } = await uploadDocument(user.id, categoryId, file, displayName);
 
       clearInterval(progressInterval);
 
@@ -249,11 +513,15 @@ export default function DocumentsPage() {
           delete next[tempId];
           return next;
         });
-        setErrors(prev => [...prev, `Erreur upload "${file.name}" : ${error.message}`]);
+        setErrors(prev => [...prev, `Erreur upload "${displayName}" : ${error.message}`]);
         setTimeout(() => setErrors([]), 5000);
       } else {
         // 100% puis retirer
-        setUploads(prev => prev[tempId] ? { ...prev, [tempId]: { ...prev[tempId], progress: 100 } } : prev);
+        setUploads(prev =>
+          prev[tempId]
+            ? { ...prev, [tempId]: { ...prev[tempId], progress: 100 } }
+            : prev
+        );
         setTimeout(() => {
           setUploads(prev => {
             const next = { ...prev };
@@ -262,13 +530,19 @@ export default function DocumentsPage() {
           });
         }, 500);
 
-        // Ajouter le document à la liste
         setDocuments(prev => [data, ...prev]);
+
+        // Message de succès temporaire
+        const successId = `success_${Date.now()}`;
+        setSuccesses(prev => [...prev, { id: successId, name: displayName, category: categoryId }]);
+        setTimeout(() => {
+          setSuccesses(prev => prev.filter(s => s.id !== successId));
+        }, 3000);
       }
     }
-  }, [user]);
+  }, [user, pendingFiles]);
 
-  // Supprimer un document
+  // Supprimer
   const handleDelete = async (docId, filePath) => {
     const { error } = await deleteDocument(docId, filePath);
     if (!error) {
@@ -276,7 +550,7 @@ export default function DocumentsPage() {
     }
   };
 
-  // Télécharger un document
+  // Télécharger
   const handleDownload = async (filePath, fileName) => {
     const { url, error } = await getSignedUrl(filePath);
     if (url && !error) {
@@ -290,12 +564,29 @@ export default function DocumentsPage() {
     }
   };
 
-  // Compteurs par catégorie
+  // Prévisualiser
+  const handlePreview = async (filePath) => {
+    const { url, error } = await getSignedUrl(filePath);
+    if (url && !error) {
+      window.open(url, '_blank');
+    }
+  };
+
+  // Renommer
+  const handleRename = async (docId, newName) => {
+    const { error } = await renameDocument(docId, newName);
+    if (!error) {
+      setDocuments(prev => prev.map(d => d.id === docId ? { ...d, name: newName } : d));
+    }
+  };
+
+  // Compteurs & stats
   const countByCategory = {};
+  let totalSize = 0;
   for (const doc of documents) {
     countByCategory[doc.category] = (countByCategory[doc.category] || 0) + 1;
+    totalSize += doc.file_size || 0;
   }
-
   const totalCount = documents.length;
   const categoryCount = Object.keys(countByCategory).length;
 
@@ -303,7 +594,7 @@ export default function DocumentsPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex items-center gap-3 text-gray-400">
-          <Icon.Clock size={20} className="animate-spin" />
+          <span className="animate-spin inline-flex"><Icon.Clock size={20} /></span>
           <span>Chargement des documents...</span>
         </div>
       </div>
@@ -322,7 +613,7 @@ export default function DocumentsPage() {
       {errors.length > 0 && (
         <div className="mb-6 flex flex-col gap-2">
           {errors.map((err, i) => (
-            <div key={i} className="flex items-center gap-3 px-4 py-3 bg-error-bg text-red-700 rounded-xl text-sm animate-fade">
+            <div key={i} className="flex items-center gap-3 px-4 py-3 bg-red-50 text-red-700 rounded-xl text-sm animate-fade">
               <Icon.X size={16} />
               {err}
             </div>
@@ -330,50 +621,89 @@ export default function DocumentsPage() {
         </div>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 mb-8">
-        {[
-          { label: 'Documents', value: totalCount, color: 'text-primary', bg: 'bg-primary-bg' },
-          { label: 'Catégories utilisées', value: `${categoryCount}/${CATEGORIES.length}`, color: 'text-emerald-700', bg: 'bg-success-bg' },
-          { label: 'Statut', value: totalCount > 0 ? 'Actif' : 'Vide', color: totalCount > 0 ? 'text-success' : 'text-gray-500', bg: totalCount > 0 ? 'bg-success-bg' : 'bg-gray-100' },
-        ].map((stat, i) => (
-          <Card key={i} className={`animate-slide delay-${i + 1}`}>
-            <div className={`w-11 h-11 ${stat.bg} rounded-xl mb-3`} />
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">{stat.label}</div>
-            <div className={`text-[28px] font-bold ${stat.color}`}>{stat.value}</div>
-          </Card>
-        ))}
+      {/* Stats visuelles */}
+      <div className="grid grid-cols-3 gap-3 md:gap-4 mb-8">
+        <Card className="animate-slide delay-1">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 md:w-11 md:h-11 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 flex-shrink-0">
+              <Icon.File size={20} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] md:text-xs text-gray-400 uppercase tracking-wide">Documents</div>
+              <div className="text-xl md:text-2xl font-bold text-gray-900">{totalCount}</div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="animate-slide delay-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 md:w-11 md:h-11 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 flex-shrink-0">
+              <Icon.Grid size={20} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] md:text-xs text-gray-400 uppercase tracking-wide">Catégories</div>
+              <div className="text-xl md:text-2xl font-bold text-gray-900">
+                {categoryCount}<span className="text-sm text-gray-400 font-normal">/{CATEGORIES.length}</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="animate-slide delay-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 md:w-11 md:h-11 bg-violet-100 rounded-xl flex items-center justify-center text-violet-600 flex-shrink-0">
+              <Icon.Cloud size={20} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] md:text-xs text-gray-400 uppercase tracking-wide">Espace</div>
+              <div className="text-xl md:text-2xl font-bold text-gray-900">{formatFileSize(totalSize)}</div>
+            </div>
+          </div>
+        </Card>
       </div>
 
+      {/* Modale de nommage */}
+      {pendingFiles && (
+        <div
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade"
+          onClick={() => setPendingFiles(null)}
+        >
+          <UploadNameForm
+            files={pendingFiles.files}
+            category={CATEGORIES.find(c => c.id === pendingFiles.categoryId)}
+            onConfirm={handleUploadConfirm}
+            onCancel={() => setPendingFiles(null)}
+          />
+        </div>
+      )}
+
       {/* Sections par catégorie */}
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-5">
         {CATEGORIES.map((cat) => {
           const catDocs = documents.filter(d => d.category === cat.id);
           const catUploads = Object.entries(uploads).filter(([, u]) => u.category === cat.id);
+          const catSuccesses = successes.filter(s => s.category === cat.id);
           const CatIcon = cat.icon;
 
           return (
-            <Card key={cat.id}>
+            <div
+              key={cat.id}
+              className={`bg-white rounded-2xl border border-gray-200 border-l-4 ${cat.accent} shadow-sm p-5 transition-all`}
+            >
               {/* En-tête catégorie */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl ${cat.bg} ${cat.color} flex items-center justify-center`}>
+                  <div className={`w-10 h-10 rounded-xl ${cat.iconBg} ${cat.iconText} flex items-center justify-center`}>
                     <CatIcon size={20} />
                   </div>
                   <div>
                     <h3 className="text-[15px] font-semibold">{cat.label}</h3>
-                    <span className="text-xs text-gray-400">
-                      {catDocs.length === 0
-                        ? 'Aucun document'
-                        : `${catDocs.length} document${catDocs.length > 1 ? 's' : ''}`}
-                    </span>
+                    <span className="text-xs text-gray-400">{cat.description}</span>
                   </div>
                 </div>
-                {catDocs.length > 0 && (
-                  <Badge variant={cat.id === 'diplome' ? 'primary' : cat.id === 'certification' ? 'warning' : 'default'}>
-                    {catDocs.length}
-                  </Badge>
-                )}
+                <span className={`inline-flex items-center justify-center min-w-[32px] h-8 px-2 rounded-full text-xs font-bold ${cat.badgeBg}`}>
+                  {catDocs.length}
+                </span>
               </div>
 
               {/* Uploads en cours */}
@@ -385,26 +715,37 @@ export default function DocumentsPage() {
                 </div>
               )}
 
+              {/* Messages de succès */}
+              {catSuccesses.length > 0 && (
+                <div className="flex flex-col gap-2 mb-3">
+                  {catSuccesses.map(s => (
+                    <UploadSuccess key={s.id} name={s.name} />
+                  ))}
+                </div>
+              )}
+
               {/* Liste des fichiers */}
               {catDocs.length > 0 && (
-                <div className="flex flex-col mb-4 divide-y divide-gray-100">
+                <div className="flex flex-col mb-3 divide-y divide-gray-100">
                   {catDocs.map(doc => (
                     <FileRow
                       key={doc.id}
                       doc={doc}
                       onDelete={handleDelete}
                       onDownload={handleDownload}
+                      onPreview={handlePreview}
+                      onRename={handleRename}
                     />
                   ))}
                 </div>
               )}
 
-              {/* Drop zone */}
+              {/* Zone de drop */}
               <CategoryDropZone
                 category={cat}
                 onFilesSelected={(files) => handleFilesSelected(cat.id, files)}
               />
-            </Card>
+            </div>
           );
         })}
       </div>

@@ -102,6 +102,23 @@ export async function deleteDocument(documentId, filePath) {
 }
 
 /**
+ * Renomme un document (met à jour le champ name).
+ */
+export async function renameDocument(documentId, newName) {
+  const { error } = await supabase
+    .from('documents')
+    .update({ name: newName })
+    .eq('id', documentId);
+
+  if (error) {
+    console.error('[documentsService] Rename error:', error.message);
+    return { error };
+  }
+
+  return { error: null };
+}
+
+/**
  * Génère une URL signée temporaire (1h) pour télécharger un fichier privé.
  */
 export async function getSignedUrl(filePath) {

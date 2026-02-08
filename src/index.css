@@ -84,3 +84,11 @@
 .delay-3 { animation-delay: 0.15s; }
 .delay-4 { animation-delay: 0.2s; }
 .delay-5 { animation-delay: 0.25s; }
+
+@keyframes dropPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(0, 102, 255, 0); }
+}
+.animate-drop-pulse {
+  animation: dropPulse 1.2s ease-in-out infinite;
+}
