@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { cleanDirector, getEmail } from '../services/siwfService';
 import { createCandidature, updateCandidature } from '../services/candidaturesService';
 import { getEmailConfig, sendApplication } from '../services/emailConfigService';
+import { getDocuments, getSignedUrl } from '../services/documentsService';
 
 export default function ApplicationModal({ establishment, existingCandidature, onClose, onSaved }) {
   const { user, profile } = useAuth();
@@ -34,6 +35,46 @@ export default function ApplicationModal({ establishment, existingCandidature, o
   const userName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || user?.email || '';
   const userSpecialty = profile?.specialty || '';
 
+  // Récupérer le contenu texte de la lettre de motivation uploadée
+  async function fetchUserMotivationLetter() {
+    if (!user?.id) return null;
+    try {
+      const { data: docs } = await getDocuments(user.id, 'lettre_motivation');
+      if (!docs || docs.length === 0) return null;
+
+      const doc = docs[0]; // Le plus récent
+      const { url } = await getSignedUrl(doc.file_path);
+      if (!url) return null;
+
+      const mime = doc.mime_type || '';
+
+      // Fichier texte : récupérer le contenu directement
+      if (mime === 'text/plain' || doc.file_name?.endsWith('.txt')) {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const text = await res.text();
+        return { type: 'text', content: text, fileName: doc.file_name };
+      }
+
+      // PDF ou DOCX : envoyer en base64 via l'API vision de Claude
+      if (mime === 'application/pdf' || mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const blob = await res.blob();
+        const buffer = await blob.arrayBuffer();
+        const base64 = btoa(
+          new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+        return { type: 'document', mediaType: mime, base64, fileName: doc.file_name };
+      }
+
+      return null;
+    } catch (err) {
+      console.warn('[ApplicationModal] Impossible de charger la lettre de motivation:', err.message);
+      return null;
+    }
+  }
+
   async function handleGenerate() {
     setGenerating(true);
     try {
@@ -44,13 +85,16 @@ export default function ApplicationModal({ establishment, existingCandidature, o
         return;
       }
 
+      // Tenter de récupérer la lettre de motivation uploadée
+      const motivationLetter = await fetchUserMotivationLetter();
+
       const systemPrompt = `Tu es un assistant spécialisé dans la rédaction de lettres de motivation médicales en Suisse.
 Rédige des lettres formelles en français avec vouvoiement.
 La lettre doit commencer directement par la formule d'appel (pas d'en-tête d'adresse).
 Utilise un ton professionnel, concis et respectueux.
 La lettre fait environ 200-250 mots.`;
 
-      const userPrompt = `Rédige une lettre de motivation spontanée pour un poste de médecin assistant avec ces informations :
+      let userPromptText = `Rédige une lettre de motivation spontanée pour un poste de médecin assistant avec ces informations :
 
 Candidat : Dr ${userName}
 Spécialité visée : ${establishment.specialty || userSpecialty || 'médecine'}
@@ -60,6 +104,37 @@ Directeur : ${directorClean}
 ${userSpecialty ? `Spécialité du candidat : ${userSpecialty}` : ''}
 
 La lettre doit être personnalisée pour cet établissement et cette spécialité.`;
+
+      // Construire le contenu du message selon le type de lettre récupérée
+      let messageContent;
+
+      if (motivationLetter?.type === 'text') {
+        userPromptText += `
+
+Voici la lettre de motivation personnelle du candidat. Inspire-toi fortement de son style, ton et arguments pour rédiger une version adaptée à l'établissement ciblé. Améliore la formulation tout en gardant la personnalité du candidat.
+
+--- LETTRE DU CANDIDAT ---
+${motivationLetter.content}
+--- FIN DE LA LETTRE ---`;
+        messageContent = userPromptText;
+      } else if (motivationLetter?.type === 'document') {
+        userPromptText += `
+
+Voici la lettre de motivation personnelle du candidat en pièce jointe. Inspire-toi fortement de son style, ton et arguments pour rédiger une version adaptée à l'établissement ciblé. Améliore la formulation tout en gardant la personnalité du candidat.`;
+        messageContent = [
+          {
+            type: 'document',
+            source: {
+              type: 'base64',
+              media_type: motivationLetter.mediaType,
+              data: motivationLetter.base64,
+            },
+          },
+          { type: 'text', text: userPromptText },
+        ];
+      } else {
+        messageContent = userPromptText;
+      }
 
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -73,7 +148,7 @@ La lettre doit être personnalisée pour cet établissement et cette spécialit�
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1024,
           system: systemPrompt,
-          messages: [{ role: 'user', content: userPrompt }],
+          messages: [{ role: 'user', content: messageContent }],
         }),
       });
 

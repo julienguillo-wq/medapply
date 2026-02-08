@@ -61,6 +61,18 @@ const CATEGORIES = [
     dropActiveBorder: 'border-purple-400',
   },
   {
+    id: 'lettre_motivation',
+    label: 'Lettre de motivation',
+    description: 'Votre lettre personnelle qui servira de base pour les candidatures IA',
+    icon: Icon.Edit,
+    iconBg: 'bg-violet-100',
+    iconText: 'text-violet-600',
+    badgeBg: 'bg-violet-100 text-violet-700',
+    accent: 'border-l-violet-500',
+    dropActiveBg: 'bg-violet-50',
+    dropActiveBorder: 'border-violet-400',
+  },
+  {
     id: 'cv',
     label: 'CV',
     description: 'Curriculum Vitae',
@@ -87,7 +99,12 @@ const CATEGORIES = [
 ];
 
 const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+const LETTRE_ACCEPTED_TYPES = [
+  'application/pdf', 'text/plain',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
 const ACCEPTED_EXT = '.pdf,.jpg,.jpeg,.png';
+const LETTRE_ACCEPTED_EXT = '.pdf,.txt,.docx';
 const MAX_SIZE = 10 * 1024 * 1024;
 
 function formatFileSize(bytes) {
@@ -405,7 +422,7 @@ function CategoryDropZone({ category, onFilesSelected }) {
         ref={inputRef}
         type="file"
         className="hidden"
-        accept={ACCEPTED_EXT}
+        accept={category.id === 'lettre_motivation' ? LETTRE_ACCEPTED_EXT : ACCEPTED_EXT}
         multiple
         onChange={handleInputChange}
       />
@@ -413,7 +430,9 @@ function CategoryDropZone({ category, onFilesSelected }) {
         <Icon.Upload size={16} />
         <span>{isDragging ? 'Déposez ici' : 'Glissez-déposez ou cliquez pour ajouter'}</span>
       </div>
-      <div className="text-xs text-gray-400 mt-1">PDF, JPG, PNG — Max 10 Mo</div>
+      <div className="text-xs text-gray-400 mt-1">
+        {category.id === 'lettre_motivation' ? 'PDF, TXT, DOCX' : 'PDF, JPG, PNG'} — Max 10 Mo
+      </div>
     </div>
   );
 }
@@ -447,9 +466,11 @@ export default function DocumentsPage() {
   }, [user]);
 
   // Validation
-  const validateFile = (file) => {
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      return `"${file.name}" : format non accepté (PDF, JPG, PNG uniquement)`;
+  const validateFile = (file, categoryId) => {
+    const accepted = categoryId === 'lettre_motivation' ? LETTRE_ACCEPTED_TYPES : ACCEPTED_TYPES;
+    const label = categoryId === 'lettre_motivation' ? 'PDF, TXT, DOCX' : 'PDF, JPG, PNG';
+    if (!accepted.includes(file.type)) {
+      return `"${file.name}" : format non accepté (${label} uniquement)`;
     }
     if (file.size > MAX_SIZE) {
       return `"${file.name}" : taille trop grande (max 10 Mo)`;
@@ -462,7 +483,7 @@ export default function DocumentsPage() {
     const newErrors = [];
     const validFiles = [];
     for (const file of files) {
-      const err = validateFile(file);
+      const err = validateFile(file, categoryId);
       if (err) newErrors.push(err);
       else validFiles.push(file);
     }
