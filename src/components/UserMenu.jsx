@@ -30,13 +30,28 @@ export default function UserMenu() {
     ? `${(profile.first_name || '')[0] || ''}${(profile.last_name || '')[0] || ''}`.toUpperCase() || '?'
     : '?';
 
-  // Nom complet à afficher
+  // Nom au format "Dr. Prénom I."
   const displayName = profile
-    ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email
-    : 'Utilisateur';
+    ? profile.first_name
+      ? `Dr. ${profile.first_name} ${(profile.last_name || '')[0] ? profile.last_name[0].toUpperCase() + '.' : ''}`.trim()
+      : profile.email
+    : '';
 
   // Spécialité
   const specialty = profile?.specialty || '';
+
+  // Skeleton de chargement si le profil n'est pas encore chargé
+  if (!profile) {
+    return (
+      <div className="bg-gray-50 rounded-[14px] p-4 flex items-center gap-3 animate-pulse">
+        <div className="w-[42px] h-[42px] rounded-full bg-gray-200 shrink-0" />
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="h-4 bg-gray-200 rounded-md w-28" />
+          <div className="h-3 bg-gray-200 rounded-md w-20" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative" ref={menuRef}>
