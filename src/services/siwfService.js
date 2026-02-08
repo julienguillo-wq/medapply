@@ -172,6 +172,14 @@ export function saveManualEmail(establishmentId, email) {
 /**
  * Get the best email for an establishment (manual > pattern > null)
  */
+/**
+ * Clean director name: remove Herr/Frau prefix
+ */
+export function cleanDirector(name) {
+  if (!name) return '—';
+  return name.replace(/^(Herr|Frau)\s+/i, '');
+}
+
 export function getEmail(establishment) {
   const manual = getManualEmails()[String(establishment.id)];
   if (manual) return { email: manual, source: 'manual' };

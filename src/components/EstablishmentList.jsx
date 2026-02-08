@@ -4,14 +4,10 @@ import Badge from './Badge';
 import Button from './Button';
 import { Icon } from './Icons';
 import EstablishmentCard from './EstablishmentCard';
-import { getEmail, saveManualEmail } from '../services/siwfService';
+import ApplicationModal from './ApplicationModal';
+import { getEmail, saveManualEmail, cleanDirector } from '../services/siwfService';
 
 const PAGE_SIZE = 20;
-
-function cleanDirector(name) {
-  if (!name) return '—';
-  return name.replace(/^(Herr|Frau)\s+/i, '');
-}
 
 function EmailCell({ establishment }) {
   const [editing, setEditing] = useState(false);
@@ -82,6 +78,7 @@ function EmailCell({ establishment }) {
 
 export default function EstablishmentList({ establishments }) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [applyTarget, setApplyTarget] = useState(null);
 
   const visible = establishments.slice(0, visibleCount);
   const hasMore = visibleCount < establishments.length;
@@ -112,18 +109,19 @@ export default function EstablishmentList({ establishments }) {
 
       {/* Desktop table */}
       <Card className="!p-0 hidden md:block">
-        <div className="grid grid-cols-[2fr_1.5fr_1fr_1.5fr_1.5fr_60px] px-6 py-[18px] border-b border-gray-100 text-[11px] text-gray-400 uppercase tracking-wider font-semibold">
+        <div className="grid grid-cols-[2fr_1.5fr_0.8fr_1.5fr_1.5fr_80px_60px] px-6 py-[18px] border-b border-gray-100 text-[11px] text-gray-400 uppercase tracking-wider font-semibold">
           <div>Établissement</div>
           <div>Spécialité</div>
           <div>Catégorie</div>
           <div>Directeur</div>
           <div>Contact</div>
           <div></div>
+          <div></div>
         </div>
         {visible.map((est, i) => (
           <div
             key={est.id}
-            className={`grid grid-cols-[2fr_1.5fr_1fr_1.5fr_1.5fr_60px] px-6 py-[18px] items-center text-sm transition-colors hover:bg-gray-50 ${
+            className={`grid grid-cols-[2fr_1.5fr_0.8fr_1.5fr_1.5fr_80px_60px] px-6 py-[18px] items-center text-sm transition-colors hover:bg-gray-50 ${
               i < visible.length - 1 ? 'border-b border-gray-100' : ''
             }`}
           >
@@ -143,6 +141,14 @@ export default function EstablishmentList({ establishments }) {
             <div className="min-w-0">
               <EmailCell establishment={est} />
             </div>
+            <div className="text-center">
+              <button
+                onClick={() => setApplyTarget(est)}
+                className="text-primary hover:underline text-[13px] font-medium cursor-pointer"
+              >
+                Postuler
+              </button>
+            </div>
             <div className="text-right">
               <a
                 href={siwfUrl(est.id)}
@@ -161,7 +167,11 @@ export default function EstablishmentList({ establishments }) {
       {/* Mobile cards */}
       <div className="flex flex-col gap-3 md:hidden">
         {visible.map((est) => (
-          <EstablishmentCard key={est.id} establishment={est} />
+          <EstablishmentCard
+            key={est.id}
+            establishment={est}
+            onApply={() => setApplyTarget(est)}
+          />
         ))}
       </div>
 
@@ -175,6 +185,15 @@ export default function EstablishmentList({ establishments }) {
             Afficher plus ({establishments.length - visibleCount} restants)
           </Button>
         </div>
+      )}
+
+      {/* Application Modal */}
+      {applyTarget && (
+        <ApplicationModal
+          establishment={applyTarget}
+          onClose={() => setApplyTarget(null)}
+          onSaved={() => setApplyTarget(null)}
+        />
       )}
     </div>
   );

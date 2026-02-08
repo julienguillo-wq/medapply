@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import Badge from './Badge';
+import Button from './Button';
 import { Icon } from './Icons';
 import { getEmail, saveManualEmail } from '../services/siwfService';
 
-export default function EstablishmentCard({ establishment }) {
+export default function EstablishmentCard({ establishment, onApply }) {
   const { id, name, city, canton, specialty, category, director, homepage } = establishment;
   const [editing, setEditing] = useState(false);
   const [emailInfo, setEmailInfo] = useState(() => getEmail(establishment));
@@ -99,6 +100,19 @@ export default function EstablishmentCard({ establishment }) {
           </div>
         )}
       </div>
+
+      {onApply && (
+        <div className="mt-3">
+          <Button
+            size="small"
+            fullWidth
+            onClick={() => onApply(establishment)}
+            icon={<Icon.Send size={15} />}
+          >
+            Postuler
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
