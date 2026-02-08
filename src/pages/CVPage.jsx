@@ -1,9 +1,18 @@
 import { useState, useEffect } from 'react';
 import { cvData as defaultCvData } from '../data/mockData';
+import { useAuth } from '../contexts/AuthContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 import { Icon } from '../components/Icons';
+
+// Affiche la valeur ou "À compléter" en grisé
+function DisplayValue({ value, className = 'text-sm font-medium' }) {
+  if (value && value.trim()) {
+    return <span className={className}>{value}</span>;
+  }
+  return <span className={className + ' text-gray-300 italic'}>À compléter</span>;
+}
 
 const LS_KEY = 'medpost_cv';
 
@@ -44,11 +53,20 @@ function RemoveButton({ onClick }) {
 }
 
 export default function CVPage() {
+  const { profile } = useAuth();
   const [cv, setCv] = useState(() => loadCV() || defaultCvData);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(null);
 
   useEffect(() => { saveCV(cv); }, [cv]);
+
+  // Données d'identité et contact issues du profil Supabase
+  const profileName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ');
+  const profileTitle = profile?.current_position || '';
+  const profileSpecialty = profile?.specialty || '';
+  const profileEmail = profile?.email || '';
+  const profilePhone = profile?.phone || '';
+  const profileHospital = profile?.hospital || '';
 
   const startEdit = () => {
     setDraft(JSON.parse(JSON.stringify(cv)));
@@ -110,7 +128,9 @@ export default function CVPage() {
     });
   };
 
-  const initials = d.name ? d.name.split(' ').filter(w => w.length > 0).map(w => w[0]).slice(0, 2).join('').toUpperCase() : 'CV';
+  const initials = profileName
+    ? profileName.split(' ').filter(w => w.length > 0).map(w => w[0]).slice(0, 2).join('').toUpperCase()
+    : 'CV';
 
   return (
     <div className="animate-fade">
@@ -152,9 +172,17 @@ export default function CVPage() {
                 </div>
               ) : (
                 <>
-                  <h2 className="text-lg font-bold mb-1">{d.name}</h2>
-                  <p className="text-gray-500 text-sm mb-3">{d.title}</p>
-                  <Badge variant="primary">{d.specialty}</Badge>
+                  <h2 className="text-lg font-bold mb-1">
+                    <DisplayValue value={profileName} className="text-lg font-bold" />
+                  </h2>
+                  <p className="text-gray-500 text-sm mb-3">
+                    <DisplayValue value={profileTitle} className="text-gray-500 text-sm" />
+                  </p>
+                  {profileSpecialty ? (
+                    <Badge variant="primary">{profileSpecialty}</Badge>
+                  ) : (
+                    <span className="text-gray-300 italic text-sm">Spécialité à compléter</span>
+                  )}
                 </>
               )}
             </div>
@@ -181,8 +209,8 @@ export default function CVPage() {
             ) : (
               <div className="flex flex-col gap-4">
                 {[
-                  { icon: Icon.Mail, label: 'Email', value: d.contact.email },
-                  { icon: Icon.Phone, label: 'Téléphone', value: d.contact.phone },
+                  { icon: Icon.Mail, label: 'Email', value: profileEmail },
+                  { icon: Icon.Phone, label: 'Téléphone', value: profilePhone },
                   { icon: Icon.MapPin, label: 'Adresse', value: d.contact.address },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
@@ -191,7 +219,7 @@ export default function CVPage() {
                     </div>
                     <div>
                       <div className="text-[11px] text-gray-400 uppercase tracking-wide">{item.label}</div>
-                      <div className="text-sm font-medium">{item.value}</div>
+                      <DisplayValue value={item.value} />
                     </div>
                   </div>
                 ))}
