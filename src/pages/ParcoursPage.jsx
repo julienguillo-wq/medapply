@@ -1,22 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { parcoursData as defaultParcoursData } from '../data/mockData';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  loadParcoursFromSupabase,
+  saveParcoursToSupabase,
+  loadFromLocalStorage,
+  saveToLocalStorage,
+  migrateLocalStorageToSupabase,
+} from '../services/parcoursService';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 import { Icon } from '../components/Icons';
-
-const LS_KEY = 'medpost_parcours';
-
-function loadParcours() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-function saveParcours(data) {
-  localStorage.setItem(LS_KEY, JSON.stringify(data));
-}
 
 const statusConfig = {
   completed: { label: 'Terminé', variant: 'success', icon: <Icon.Check size={12} /> },
@@ -45,11 +40,70 @@ function computeStats(data) {
 }
 
 export default function ParcoursPage() {
-  const [data, setData] = useState(() => loadParcours() || defaultParcoursData);
+  const { user } = useAuth();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(null);
 
-  useEffect(() => { saveParcours(data); }, [data]);
+  // Chargement initial : Supabase → localStorage → défaut
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      try {
+        if (user) {
+          // Tenter la migration localStorage → Supabase
+          await migrateLocalStorageToSupabase(user.id);
+
+          // Charger depuis Supabase
+          const supaData = await loadParcoursFromSupabase(user.id);
+          if (!cancelled && supaData) {
+            const stats = computeStats(supaData);
+            const withStats = { ...supaData, completedMonths: stats.completedMonths, totalMonths: stats.totalMonths };
+            setData(withStats);
+            saveToLocalStorage(withStats);
+            return;
+          }
+        }
+
+        // Fallback : localStorage
+        const local = loadFromLocalStorage();
+        if (!cancelled) {
+          setData(local || defaultParcoursData);
+        }
+      } catch (err) {
+        console.error('[ParcoursPage] Erreur chargement:', err);
+        if (!cancelled) {
+          setData(loadFromLocalStorage() || defaultParcoursData);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  // Sauvegarde vers Supabase + localStorage
+  const persistData = useCallback(async (newData) => {
+    setData(newData);
+    saveToLocalStorage(newData);
+
+    if (user) {
+      setSaving(true);
+      try {
+        await saveParcoursToSupabase(user.id, newData);
+      } catch (err) {
+        console.error('[ParcoursPage] Erreur sauvegarde:', err);
+      } finally {
+        setSaving(false);
+      }
+    }
+  }, [user]);
 
   const startEdit = () => {
     setDraft(JSON.parse(JSON.stringify(data)));
@@ -58,13 +112,12 @@ export default function ParcoursPage() {
 
   const cancelEdit = () => { setDraft(null); setEditing(false); };
 
-  const saveEdit = () => {
-    // Recompute stats before saving
+  const saveEdit = async () => {
     const stats = computeStats(draft);
     const updated = { ...draft, completedMonths: stats.completedMonths, totalMonths: stats.totalMonths };
-    setData(updated);
-    setDraft(null);
     setEditing(false);
+    setDraft(null);
+    await persistData(updated);
   };
 
   const d = editing ? draft : data;
@@ -108,6 +161,17 @@ export default function ParcoursPage() {
     }));
   };
 
+  if (loading || !d) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="flex items-center gap-3 text-gray-400">
+          <Icon.Clock size={20} className="animate-spin" />
+          <span>Chargement du parcours…</span>
+        </div>
+      </div>
+    );
+  }
+
   const { completedMonths, totalMonths } = computeStats(d);
   const progressPercent = totalMonths > 0 ? Math.round((completedMonths / totalMonths) * 100) : 0;
   const completedCount = d.stages.filter(s => s.status === 'completed').length;
@@ -128,7 +192,13 @@ export default function ParcoursPage() {
             <p className="text-gray-500 text-[15px]">Cursus de formation postgraduée en {d.specialty}</p>
           )}
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
+          {saving && (
+            <span className="text-xs text-gray-400 flex items-center gap-1.5">
+              <Icon.Clock size={12} className="animate-spin" />
+              Sauvegarde…
+            </span>
+          )}
           {editing ? (
             <>
               <Button variant="secondary" onClick={cancelEdit} icon={<Icon.X size={18} />}>Annuler</Button>
