@@ -56,9 +56,28 @@ function buildProfileFromAuth(authProfile) {
   const fullName = [authProfile.first_name, authProfile.last_name].filter(Boolean).join(' ');
   if (fullName) p.name = fullName;
   if (authProfile.email) p.email = authProfile.email;
+  if (authProfile.phone) p.phone = authProfile.phone;
   if (authProfile.specialty) p.specialty = authProfile.specialty;
+  if (authProfile.current_position) p.currentPosition = authProfile.current_position;
+  if (authProfile.experience) p.experience = authProfile.experience;
   if (authProfile.hospital) p.hospital = authProfile.hospital;
   return p;
+}
+
+// Convert a single local key + value into Supabase column updates
+function toSupabaseUpdates(key, value) {
+  switch (key) {
+    case 'name': {
+      const parts = value.trim().split(/\s+/);
+      return { first_name: parts[0] || '', last_name: parts.slice(1).join(' ') || '' };
+    }
+    case 'email': return { email: value };
+    case 'phone': return { phone: value };
+    case 'specialty': return { specialty: value };
+    case 'currentPosition': return { current_position: value };
+    case 'experience': return { experience: value };
+    default: return {};
+  }
 }
 
 function buildGreeting(authProfile, remainingQuestions) {
@@ -136,6 +155,9 @@ export default function ProfilePage() {
     const updatedProfile = { ...profile, [currentQuestion.key]: extracted };
     setProfile(updatedProfile);
 
+    // Save this field immediately to Supabase
+    updateProfile(toSupabaseUpdates(currentQuestion.key, extracted));
+
     const nextStep = step + 1;
 
     setTimeout(() => {
@@ -146,25 +168,12 @@ export default function ProfilePage() {
           role: 'assistant',
           content: "Parfait ! Votre profil est complet. Vous pouvez maintenant ajouter vos documents."
         }]);
-        saveProfile(updatedProfile);
       }
       setStep(nextStep);
     }, 400);
 
     setInput('');
   };
-
-  async function saveProfile(localProfile) {
-    const updates = {};
-    if (localProfile.name) {
-      const parts = localProfile.name.trim().split(/\s+/);
-      updates.first_name = parts[0] || '';
-      updates.last_name = parts.slice(1).join(' ') || '';
-    }
-    if (localProfile.email) updates.email = localProfile.email;
-    if (localProfile.specialty) updates.specialty = localProfile.specialty;
-    await updateProfile(updates);
-  }
 
   const totalQuestions = allQuestions.length;
   const prefilledCount = totalQuestions - remainingQuestions.length;
