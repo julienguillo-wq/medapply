@@ -22,12 +22,21 @@
   </script>
   <style>
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-8px); } }
+    @keyframes checkDraw { from { stroke-dashoffset: 50; } to { stroke-dashoffset: 0; } }
+    @keyframes circleGrow { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
     .animate-fade { animation: fadeIn 0.4s ease-out; }
+    .animate-fade-out { animation: fadeOut 0.3s ease-in forwards; }
+    .animate-circle { animation: circleGrow 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+    .animate-check { stroke-dasharray: 50; stroke-dashoffset: 50; animation: checkDraw 0.5s ease-out 0.3s forwards; }
+    .animate-pulse-soft { animation: pulse 2s ease-in-out infinite; }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 font-sans flex items-center justify-center px-4 py-8">
 
-  <div class="w-full max-w-md animate-fade">
+  <!-- ==================== ÉCRAN FORMULAIRE ==================== -->
+  <div id="signup-view" class="w-full max-w-md animate-fade">
     <!-- Logo -->
     <div class="text-center mb-8">
       <div class="w-14 h-14 mx-auto mb-4 bg-gradient-to-br from-[#2563EB] to-[#1d4ed8] rounded-2xl flex items-center justify-center shadow-lg shadow-[#2563EB]/25">
@@ -160,9 +169,6 @@
         <!-- Message d'erreur -->
         <div id="error-msg" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3"></div>
 
-        <!-- Message de succès -->
-        <div id="success-msg" class="hidden text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3"></div>
-
         <!-- Bouton inscription -->
         <button
           type="submit" id="btn-submit"
@@ -180,12 +186,81 @@
     </p>
   </div>
 
+  <!-- ==================== ÉCRAN DE CONFIRMATION ==================== -->
+  <div id="confirm-view" class="w-full max-w-md hidden">
+    <div class="text-center animate-fade">
+      <!-- Logo -->
+      <div class="w-14 h-14 mx-auto mb-8 bg-gradient-to-br from-[#2563EB] to-[#1d4ed8] rounded-2xl flex items-center justify-center shadow-lg shadow-[#2563EB]/25">
+        <span class="text-white font-bold text-2xl">M</span>
+      </div>
+
+      <!-- Carte de confirmation -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <!-- Icône check animée -->
+        <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-emerald-50 flex items-center justify-center animate-circle">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="11" stroke="#10B981" stroke-width="1.5" opacity="0.3" />
+            <path d="M7 13l3 3 7-7" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="animate-check" />
+          </svg>
+        </div>
+
+        <!-- Icône enveloppe -->
+        <div class="w-14 h-14 mx-auto mb-5 animate-pulse-soft">
+          <svg viewBox="0 0 56 56" fill="none">
+            <rect x="4" y="12" width="48" height="32" rx="4" stroke="#2563EB" stroke-width="2.5" fill="#EFF6FF" />
+            <path d="M4 16l24 16 24-16" stroke="#2563EB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+
+        <h2 class="text-xl font-bold text-gray-900 mb-2">Vérifiez votre boîte mail</h2>
+
+        <p class="text-gray-500 text-sm mb-4">
+          Nous avons envoyé un lien de confirmation à
+        </p>
+
+        <!-- Email de l'utilisateur -->
+        <p id="confirm-email" class="text-[#2563EB] font-semibold text-base mb-5 break-all">
+          votre@email.com
+        </p>
+
+        <p class="text-gray-400 text-sm mb-8 leading-relaxed">
+          Cliquez sur le lien dans l'e-mail pour activer votre compte.<br />
+          Si vous ne trouvez pas l'e-mail, vérifiez vos spams.
+        </p>
+
+        <!-- Bouton renvoyer -->
+        <button
+          id="btn-resend"
+          class="w-full py-3 px-4 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-semibold rounded-xl transition-colors text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Renvoyer l'e-mail
+        </button>
+
+        <!-- Message renvoi -->
+        <div id="resend-msg" class="hidden text-sm mt-3 rounded-xl px-4 py-3"></div>
+      </div>
+
+      <!-- Lien retour connexion -->
+      <p class="text-center text-sm text-gray-500 mt-6">
+        <a href="/login.html" class="text-[#2563EB] font-medium hover:text-[#1d4ed8] transition-colors">← Retour à la connexion</a>
+      </p>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="/js/supabase-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     // Initialiser le client Supabase
     const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    // Références aux vues
+    const signupView = document.getElementById('signup-view');
+    const confirmView = document.getElementById('confirm-view');
+    const confirmEmail = document.getElementById('confirm-email');
+
+    // Variable pour stocker l'email de l'inscription
+    let registeredEmail = '';
 
     // Vérifier si déjà connecté → rediriger vers l'app
     (async () => {
@@ -197,34 +272,36 @@
 
     const form = document.getElementById('signup-form');
     const errorMsg = document.getElementById('error-msg');
-    const successMsg = document.getElementById('success-msg');
     const btnSubmit = document.getElementById('btn-submit');
     const btnGoogle = document.getElementById('btn-google');
+    const btnResend = document.getElementById('btn-resend');
+    const resendMsg = document.getElementById('resend-msg');
 
     // Afficher une erreur
     function showError(message) {
       errorMsg.textContent = message;
       errorMsg.classList.remove('hidden');
-      successMsg.classList.add('hidden');
     }
 
-    // Afficher un succès
-    function showSuccess(message) {
-      successMsg.textContent = message;
-      successMsg.classList.remove('hidden');
+    // Masquer l'erreur
+    function hideError() {
       errorMsg.classList.add('hidden');
     }
 
-    // Masquer les messages
-    function hideMessages() {
-      errorMsg.classList.add('hidden');
-      successMsg.classList.add('hidden');
+    // Transition vers l'écran de confirmation
+    function showConfirmation(email) {
+      confirmEmail.textContent = email;
+      signupView.classList.add('animate-fade-out');
+      setTimeout(() => {
+        signupView.classList.add('hidden');
+        confirmView.classList.remove('hidden');
+      }, 300);
     }
 
     // Inscription avec email/mot de passe
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      hideMessages();
+      hideError();
 
       const firstName = document.getElementById('first_name').value.trim();
       const lastName = document.getElementById('last_name').value.trim();
@@ -287,14 +364,40 @@
         btnSubmit.disabled = false;
         btnSubmit.textContent = 'Créer mon compte';
       } else {
-        // Inscription réussie
-        showSuccess(
-          'Compte créé avec succès ! Vérifiez votre boîte e-mail pour confirmer votre inscription.'
-        );
-        form.reset();
-        btnSubmit.disabled = true;
-        btnSubmit.textContent = 'Vérifiez votre e-mail';
+        // Inscription réussie → afficher l'écran de confirmation
+        registeredEmail = email;
+        showConfirmation(email);
       }
+    });
+
+    // Renvoyer l'e-mail de confirmation
+    btnResend.addEventListener('click', async () => {
+      if (!registeredEmail) return;
+
+      btnResend.disabled = true;
+      btnResend.textContent = 'Envoi en cours...';
+      resendMsg.classList.add('hidden');
+
+      const { error } = await sb.auth.resend({
+        type: 'signup',
+        email: registeredEmail,
+      });
+
+      if (error) {
+        resendMsg.textContent = 'Erreur lors du renvoi : ' + error.message;
+        resendMsg.className = 'text-sm mt-3 rounded-xl px-4 py-3 text-red-600 bg-red-50 border border-red-200';
+        resendMsg.classList.remove('hidden');
+      } else {
+        resendMsg.textContent = 'E-mail renvoyé avec succès ! Vérifiez votre boîte de réception.';
+        resendMsg.className = 'text-sm mt-3 rounded-xl px-4 py-3 text-emerald-700 bg-emerald-50 border border-emerald-200';
+        resendMsg.classList.remove('hidden');
+      }
+
+      // Réactiver le bouton après 30 secondes (anti-spam)
+      setTimeout(() => {
+        btnResend.disabled = false;
+        btnResend.textContent = 'Renvoyer l\'e-mail';
+      }, 30000);
     });
 
     // Inscription avec Google
