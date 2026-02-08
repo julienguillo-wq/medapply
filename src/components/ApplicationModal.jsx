@@ -9,11 +9,60 @@ import { createCandidature, updateCandidature } from '../services/candidaturesSe
 import { getEmailConfig, sendApplication } from '../services/emailConfigService';
 import { getDocuments, getSignedUrl } from '../services/documentsService';
 
+// Construit une formule d'appel personnalisée à partir du nom brut du directeur
+// Ex: "Herr Prof. Dr. med. Hans Müller" → "Monsieur le Professeur Müller"
+// Ex: "Frau Dr. med. Anna Schmidt" → "Madame la Docteure Schmidt"
+function buildSalutation(rawDirector) {
+  if (!rawDirector) return 'Madame, Monsieur';
+
+  const raw = rawDirector.trim();
+
+  // Détecter le genre via le préfixe allemand Herr/Frau
+  const isFemale = /^Frau\b/i.test(raw);
+  const isMale = /^Herr\b/i.test(raw);
+
+  // Retirer les préfixes/titres pour extraire le nom de famille
+  const cleaned = raw
+    .replace(/^(Herr|Frau)\s+/i, '')
+    .replace(/\b(Prof\.|PD|Dr\.|med\.|phil\.|sc\.|rer\.|nat\.|habil\.)\s*/gi, '')
+    .trim();
+
+  // Le nom de famille est le dernier mot
+  const parts = cleaned.split(/\s+/);
+  const lastName = parts[parts.length - 1] || cleaned;
+
+  // Détecter le titre académique le plus élevé
+  const hasProf = /\bProf\./i.test(raw);
+  const hasPD = /\bPD\b/i.test(raw);
+  const hasDr = /\bDr\./i.test(raw);
+
+  if (!isFemale && !isMale) {
+    // Genre inconnu : formule avec titre si disponible
+    if (hasProf || hasPD) return `Monsieur le Professeur / Madame la Professeure ${lastName}`;
+    if (hasDr) return `Monsieur le Docteur / Madame la Docteure ${lastName}`;
+    return 'Madame, Monsieur';
+  }
+
+  const civility = isFemale ? 'Madame' : 'Monsieur';
+
+  if (hasProf || hasPD) {
+    const title = isFemale ? 'la Professeure' : 'le Professeur';
+    return `${civility} ${title} ${lastName}`;
+  }
+  if (hasDr) {
+    const title = isFemale ? 'la Docteure' : 'le Docteur';
+    return `${civility} ${title} ${lastName}`;
+  }
+
+  return `${civility} ${lastName}`;
+}
+
 export default function ApplicationModal({ establishment, existingCandidature, onClose, onSaved }) {
   const { user, profile } = useAuth();
 
   const emailInfo = getEmail(establishment);
   const directorClean = cleanDirector(establishment.director);
+  const salutation = buildSalutation(establishment.director);
 
   const [letter, setLetter] = useState(existingCandidature?.motivation_letter || '');
   const [generating, setGenerating] = useState(false);
@@ -80,7 +129,7 @@ export default function ApplicationModal({ establishment, existingCandidature, o
     try {
       const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
       if (!apiKey) {
-        setLetter("(Clé API Anthropic manquante — ajoutez VITE_ANTHROPIC_API_KEY dans .env)\n\n" + directorClean + ",\n\nJe me permets de vous adresser ma candidature spontanée pour un poste de médecin assistant dans votre service de " + (establishment.specialty || 'médecine') + ". Vous trouverez ci-joint ma lettre de motivation, mon CV ainsi que mes diplômes.\n\nJe reste à votre disposition pour un entretien et vous adresse mes meilleures salutations.\n\nDr " + userName);
+        setLetter("(Clé API Anthropic manquante — ajoutez VITE_ANTHROPIC_API_KEY dans .env)\n\n" + salutation + ",\n\nJe me permets de vous adresser ma candidature spontanée pour un poste de médecin assistant dans votre service de " + (establishment.specialty || 'médecine') + ". Vous trouverez ci-joint ma lettre de motivation, mon CV ainsi que mes diplômes.\n\nJe reste à votre disposition pour un entretien et vous adresse mes meilleures salutations.\n\nDr " + userName);
         setGenerating(false);
         return;
       }
@@ -94,6 +143,10 @@ La lettre de motivation complète, le CV et les diplômes seront joints en pièc
 L'email doit : se présenter brièvement, exprimer l'intérêt pour le poste/service, mentionner les pièces jointes, et conclure avec une formule de politesse suisse.
 Rédige en français avec vouvoiement.
 L'email commence directement par la formule d'appel (pas d'en-tête d'adresse, pas d'objet).
+
+FORMULE D'APPEL :
+- Utiliser EXACTEMENT la formule d'appel fournie dans les données (ex: "Monsieur le Professeur Müller"). Ne JAMAIS la modifier ni utiliser "Madame, Monsieur" si un nom est fourni.
+- Suivre la formule d'appel d'une virgule puis retour à la ligne.
 
 RÈGLES IMPÉRATIVES SUR LE VOCABULAIRE MÉDICAL :
 - Le candidat est un MÉDECIN ASSISTANT en formation postgraduée, PAS un spécialiste confirmé.
@@ -109,6 +162,7 @@ Spécialité visée : ${establishment.specialty || userSpecialty || 'médecine'}
 Établissement : ${establishment.name}
 Ville : ${establishment.city || ''} (${establishment.canton || ''})
 Directeur : ${directorClean}
+Formule d'appel à utiliser : ${salutation}
 ${userSpecialty ? `Formation actuelle du candidat : médecin assistant en ${userSpecialty}` : ''}
 
 Rappel : la lettre de motivation détaillée, le CV et les diplômes sont en pièces jointes. L'email doit être bref et donner envie d'ouvrir les documents joints.`;
