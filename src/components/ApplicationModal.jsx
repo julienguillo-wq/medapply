@@ -93,7 +93,14 @@ Rédige un email d'accompagnement court et professionnel (5-8 lignes maximum) po
 La lettre de motivation complète, le CV et les diplômes seront joints en pièce jointe, il est donc inutile de répéter leur contenu.
 L'email doit : se présenter brièvement, exprimer l'intérêt pour le poste/service, mentionner les pièces jointes, et conclure avec une formule de politesse suisse.
 Rédige en français avec vouvoiement.
-L'email commence directement par la formule d'appel (pas d'en-tête d'adresse, pas d'objet).`;
+L'email commence directement par la formule d'appel (pas d'en-tête d'adresse, pas d'objet).
+
+RÈGLES IMPÉRATIVES SUR LE VOCABULAIRE MÉDICAL :
+- Le candidat est un MÉDECIN ASSISTANT en formation postgraduée, PAS un spécialiste confirmé.
+- Ne JAMAIS écrire "spécialisé en", "fort d'une expérience en", "expert en" ou toute formulation qui implique un titre de spécialiste obtenu.
+- Utiliser : "actuellement en formation postgraduée en [spécialité]", "médecin assistant en [spécialité]", ou "actuellement en tournée/tournus dans le service de [spécialité]".
+- Écrire "je souhaite poursuivre ma formation en..." et NON "orienter ma carrière vers..." ou "mettre mes compétences de spécialiste au service de...".
+- Le candidat CHERCHE un poste de formation, il ne propose pas ses services de spécialiste.`;
 
       let userPromptText = `Rédige un email d'accompagnement court (5-8 lignes) pour une candidature spontanée de médecin assistant avec ces informations :
 
@@ -102,7 +109,7 @@ Spécialité visée : ${establishment.specialty || userSpecialty || 'médecine'}
 Établissement : ${establishment.name}
 Ville : ${establishment.city || ''} (${establishment.canton || ''})
 Directeur : ${directorClean}
-${userSpecialty ? `Spécialité du candidat : ${userSpecialty}` : ''}
+${userSpecialty ? `Formation actuelle du candidat : médecin assistant en ${userSpecialty}` : ''}
 
 Rappel : la lettre de motivation détaillée, le CV et les diplômes sont en pièces jointes. L'email doit être bref et donner envie d'ouvrir les documents joints.`;
 
