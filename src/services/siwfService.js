@@ -2,6 +2,8 @@
  * Service pour charger et filtrer les données SIWF
  */
 
+import { findDomain } from '../data/hospitalDomains';
+
 // Canton name mapping
 const CANTON_NAMES = {
   'ZH': 'Zurich', 'BE': 'Berne', 'VD': 'Vaud', 'GE': 'Genève',
@@ -82,43 +84,65 @@ export function computeCantonCounts(all, selectedSpecialties = []) {
 }
 
 /**
- * Generate a suggested email from director name + homepage URL
+ * Normalize a name part: lowercase, strip accents and non-alpha chars
  */
-export function generateEmail(director, homepage) {
-  if (!director || !homepage) return null;
-
-  // Clean director title
-  let name = director
-    .replace(/\b(Herr|Frau|Prof\.|Dr\.|med\.|PD|PhD|MPH|MSc|BSc|MBA|dipl\.)\b/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  if (!name) return null;
-
-  // Extract domain from homepage
-  let domain;
-  try {
-    const url = new URL(homepage);
-    domain = url.hostname.replace(/^www\./, '');
-  } catch {
-    return null;
-  }
-
-  // Split name into parts, take first and last
-  const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length < 2) return null;
-
-  const firstName = parts[0];
-  const lastName = parts[parts.length - 1];
-
-  // Normalize accents
-  const normalize = (s) => s
+function normalizeName(s) {
+  return s
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z.-]/g, '');
+}
 
-  return `${normalize(firstName)}.${normalize(lastName)}@${domain}`;
+/**
+ * Clean director title, extract first + last name
+ */
+function parseDirectorName(director) {
+  if (!director) return null;
+
+  const name = director
+    .replace(/\b(Herr|Frau|Prof\.|Dr\.|med\.|PD|PhD|MPH|MSc|BSc|MBA|dipl\.)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return null;
+
+  return {
+    firstName: normalizeName(parts[0]),
+    lastName: normalizeName(parts[parts.length - 1]),
+  };
+}
+
+/**
+ * Generate a suggested email from establishment name + director name.
+ * 1. Look up the domain in hospitalDomains.js (partial match on establishment name)
+ * 2. If found, generate firstname.lastname@domain
+ * 3. Otherwise return null (displayed as "Domaine inconnu")
+ */
+export function generateEmail(director, homepage, establishmentName) {
+  const parsed = parseDirectorName(director);
+  if (!parsed) return null;
+
+  // 1. Try domain lookup from hospital mapping
+  const mappedDomain = findDomain(establishmentName);
+  if (mappedDomain) {
+    return `${parsed.firstName}.${parsed.lastName}@${mappedDomain}`;
+  }
+
+  // 2. Fallback: try extracting domain from homepage (if available)
+  if (homepage) {
+    try {
+      const url = new URL(homepage);
+      const domain = url.hostname.replace(/^www\./, '');
+      return `${parsed.firstName}.${parsed.lastName}@${domain}`;
+    } catch {
+      // invalid URL, fall through
+    }
+  }
+
+  // 3. No domain found
+  return null;
 }
 
 /**
@@ -152,7 +176,7 @@ export function getEmail(establishment) {
   const manual = getManualEmails()[String(establishment.id)];
   if (manual) return { email: manual, source: 'manual' };
 
-  const pattern = generateEmail(establishment.director, establishment.homepage);
+  const pattern = generateEmail(establishment.director, establishment.homepage, establishment.name);
   if (pattern) return { email: pattern, source: 'pattern' };
 
   return { email: null, source: null };
