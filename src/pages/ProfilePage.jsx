@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import { Icon } from '../components/Icons';
+import { useAuth } from '../contexts/AuthContext';
 
-const questions = [
+const allQuestions = [
   { key: 'name', q: "Quel est votre nom complet ?" },
   { key: 'email', q: "Votre email professionnel ?" },
   { key: 'phone', q: "Votre numéro de téléphone ?" },
@@ -12,45 +13,127 @@ const questions = [
   { key: 'experience', q: "Décrivez brièvement votre parcours." },
 ];
 
+// Map Supabase profile fields to local profile keys
+function buildProfileFromAuth(authProfile) {
+  if (!authProfile) return {};
+  const p = {};
+  const fullName = [authProfile.first_name, authProfile.last_name].filter(Boolean).join(' ');
+  if (fullName) p.name = fullName;
+  if (authProfile.email) p.email = authProfile.email;
+  if (authProfile.specialty) p.specialty = authProfile.specialty;
+  if (authProfile.hospital) p.hospital = authProfile.hospital;
+  return p;
+}
+
+function buildGreeting(authProfile, remainingQuestions) {
+  if (!authProfile) {
+    if (remainingQuestions.length > 0) {
+      return `Bonjour ! Je vais vous aider à créer votre profil médical. ${remainingQuestions[0].q}`;
+    }
+    return "Bonjour ! Votre profil est déjà complet.";
+  }
+
+  const firstName = authProfile.first_name;
+  const specialty = authProfile.specialty;
+  const hospital = authProfile.hospital;
+
+  let greeting = 'Bonjour';
+  if (firstName) greeting += ` Dr. ${firstName}`;
+  greeting += ' !';
+
+  const knownParts = [];
+  if (specialty) knownParts.push(`vous êtes en ${specialty}`);
+  if (hospital) knownParts.push(`à ${hospital}`);
+
+  if (knownParts.length > 0) {
+    greeting += ` Je vois que ${knownParts.join(' ')}.`;
+  }
+
+  if (remainingQuestions.length > 0) {
+    greeting += ` Complétez votre profil pour optimiser vos candidatures. ${remainingQuestions[0].q}`;
+  } else {
+    greeting += ' Votre profil est déjà complet. Vous pouvez ajouter vos documents.';
+  }
+
+  return greeting;
+}
+
 export default function ProfilePage() {
+  const { profile: authProfile, updateProfile } = useAuth();
   const [profile, setProfile] = useState({});
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: "Bonjour ! Je vais vous aider à créer votre profil médical. Quel est votre nom complet ?" }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [step, setStep] = useState(0);
+  const [remainingQuestions, setRemainingQuestions] = useState([]);
+  const [initialized, setInitialized] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // Initialize profile from Supabase data
+  useEffect(() => {
+    if (initialized) return;
+
+    const prefilled = buildProfileFromAuth(authProfile);
+    setProfile(prefilled);
+
+    const remaining = allQuestions.filter(q => !prefilled[q.key]);
+    setRemainingQuestions(remaining);
+
+    const greeting = buildGreeting(authProfile, remaining);
+    setMessages([{ role: 'assistant', content: greeting }]);
+
+    setInitialized(true);
+  }, [authProfile, initialized]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const isComplete = step >= remainingQuestions.length;
+
   const handleSend = () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isComplete) return;
 
     setMessages(prev => [...prev, { role: 'user', content: input }]);
 
-    if (step < questions.length) {
-      setProfile(prev => ({ ...prev, [questions[step].key]: input }));
-    }
+    const currentQuestion = remainingQuestions[step];
+    const updatedProfile = { ...profile, [currentQuestion.key]: input };
+    setProfile(updatedProfile);
+
+    const nextStep = step + 1;
 
     setTimeout(() => {
-      if (step < questions.length - 1) {
-        setMessages(prev => [...prev, { role: 'assistant', content: questions[step + 1].q }]);
-        setStep(step + 1);
-      } else if (step === questions.length - 1) {
+      if (nextStep < remainingQuestions.length) {
+        setMessages(prev => [...prev, { role: 'assistant', content: remainingQuestions[nextStep].q }]);
+      } else {
         setMessages(prev => [...prev, {
           role: 'assistant',
           content: "Parfait ! Votre profil est complet. Vous pouvez maintenant ajouter vos documents."
         }]);
-        setStep(step + 1);
+        saveProfile(updatedProfile);
       }
+      setStep(nextStep);
     }, 400);
 
     setInput('');
   };
 
-  const progress = Math.round((step / questions.length) * 100);
+  async function saveProfile(localProfile) {
+    const updates = {};
+    if (localProfile.name) {
+      const parts = localProfile.name.trim().split(/\s+/);
+      updates.first_name = parts[0] || '';
+      updates.last_name = parts.slice(1).join(' ') || '';
+    }
+    if (localProfile.email) updates.email = localProfile.email;
+    if (localProfile.specialty) updates.specialty = localProfile.specialty;
+    await updateProfile(updates);
+  }
+
+  const totalQuestions = allQuestions.length;
+  const prefilledCount = totalQuestions - remainingQuestions.length;
+  const progress = totalQuestions > 0
+    ? Math.round(((prefilledCount + step) / totalQuestions) * 100)
+    : 100;
 
   return (
     <div className="animate-fade">
@@ -98,10 +181,11 @@ export default function ProfilePage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Tapez votre réponse..."
-              className="flex-1 px-[18px] py-3.5 border border-gray-200 rounded-xl text-base md:text-sm outline-none focus:border-primary transition-colors"
+              placeholder={isComplete ? "Profil complété !" : "Tapez votre réponse..."}
+              disabled={isComplete}
+              className="flex-1 px-[18px] py-3.5 border border-gray-200 rounded-xl text-base md:text-sm outline-none focus:border-primary transition-colors disabled:bg-gray-50 disabled:text-gray-400"
             />
-            <Button onClick={handleSend} icon={<Icon.Send size={18} />}>
+            <Button onClick={handleSend} icon={<Icon.Send size={18} />} disabled={isComplete}>
               Envoyer
             </Button>
           </div>
