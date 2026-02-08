@@ -3,6 +3,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import { Icon } from '../components/Icons';
 import { useAuth } from '../contexts/AuthContext';
+import { getEmailConfig, saveEmailConfig, testSmtpConnection } from '../services/emailConfigService';
 
 const allQuestions = [
   { key: 'name', q: "Quel est votre nom complet ?" },
@@ -114,7 +115,7 @@ function buildGreeting(authProfile, remainingQuestions) {
 }
 
 export default function ProfilePage() {
-  const { profile: authProfile, updateProfile } = useAuth();
+  const { user, profile: authProfile, updateProfile } = useAuth();
   const [profile, setProfile] = useState({});
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -122,6 +123,64 @@ export default function ProfilePage() {
   const [remainingQuestions, setRemainingQuestions] = useState([]);
   const [initialized, setInitialized] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // Email SMTP config state
+  const [smtpEmail, setSmtpEmail] = useState('');
+  const [smtpPassword, setSmtpPassword] = useState('');
+  const [smtpVerified, setSmtpVerified] = useState(false);
+  const [smtpLoading, setSmtpLoading] = useState(false);
+  const [smtpTesting, setSmtpTesting] = useState(false);
+  const [smtpMessage, setSmtpMessage] = useState(null); // { type: 'success'|'error', text }
+  const [smtpConfigLoaded, setSmtpConfigLoaded] = useState(false);
+
+  // Charger la config email existante
+  useEffect(() => {
+    if (!user || smtpConfigLoaded) return;
+    getEmailConfig(user.id).then(({ data }) => {
+      if (data) {
+        setSmtpEmail(data.email_address || '');
+        setSmtpPassword(data.smtp_password || '');
+        setSmtpVerified(data.smtp_verified || false);
+      }
+      setSmtpConfigLoaded(true);
+    });
+  }, [user, smtpConfigLoaded]);
+
+  async function handleTestSmtp() {
+    if (!smtpEmail || !smtpPassword) {
+      setSmtpMessage({ type: 'error', text: 'Remplissez l\'email et le mot de passe.' });
+      return;
+    }
+    setSmtpTesting(true);
+    setSmtpMessage(null);
+    const result = await testSmtpConnection(smtpEmail, smtpPassword);
+    if (result.success) {
+      setSmtpVerified(true);
+      setSmtpMessage({ type: 'success', text: 'Connexion SMTP réussie !' });
+      // Sauvegarder avec verified = true
+      await saveEmailConfig(user.id, smtpEmail, smtpPassword, true);
+    } else {
+      setSmtpVerified(false);
+      setSmtpMessage({ type: 'error', text: result.error || 'Échec de la connexion' });
+    }
+    setSmtpTesting(false);
+  }
+
+  async function handleSaveSmtp() {
+    if (!smtpEmail || !smtpPassword) {
+      setSmtpMessage({ type: 'error', text: 'Remplissez tous les champs.' });
+      return;
+    }
+    setSmtpLoading(true);
+    setSmtpMessage(null);
+    const { error } = await saveEmailConfig(user.id, smtpEmail, smtpPassword, smtpVerified);
+    if (error) {
+      setSmtpMessage({ type: 'error', text: 'Erreur lors de la sauvegarde.' });
+    } else {
+      setSmtpMessage({ type: 'success', text: 'Configuration sauvegardée.' });
+    }
+    setSmtpLoading(false);
+  }
 
   // Initialize profile from Supabase data
   useEffect(() => {
@@ -272,6 +331,105 @@ export default function ProfilePage() {
             ))}
           </Card>
         </div>
+      </div>
+
+      {/* Email SMTP Configuration */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold tracking-tight mb-2">Configuration email SMTP</h2>
+        <p className="text-gray-500 text-[15px] mb-5">
+          Configurez votre Gmail pour envoyer vos candidatures directement depuis MedApply.
+        </p>
+
+        <Card>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
+              <Icon.Mail size={20} className="text-red-500" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm">Gmail SMTP</h3>
+              <p className="text-xs text-gray-400">
+                {smtpVerified ? 'Connecté et vérifié' : 'Non configuré'}
+              </p>
+            </div>
+            {smtpVerified && (
+              <span className="ml-auto inline-flex items-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 px-3 py-1.5 rounded-full">
+                <Icon.Check size={14} />
+                Vérifié
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Adresse Gmail
+              </label>
+              <input
+                type="email"
+                value={smtpEmail}
+                onChange={(e) => { setSmtpEmail(e.target.value); setSmtpVerified(false); }}
+                placeholder="votre.email@gmail.com"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Mot de passe d&apos;application Google
+              </label>
+              <input
+                type="password"
+                value={smtpPassword}
+                onChange={(e) => { setSmtpPassword(e.target.value); setSmtpVerified(false); }}
+                placeholder="xxxx xxxx xxxx xxxx"
+                maxLength={19}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary transition-colors font-mono"
+              />
+              <p className="text-xs text-gray-400 mt-1.5">
+                Générez un mot de passe d&apos;application sur{' '}
+                <a
+                  href="https://myaccount.google.com/apppasswords"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  myaccount.google.com/apppasswords
+                </a>
+              </p>
+            </div>
+          </div>
+
+          {smtpMessage && (
+            <div className={`mt-4 p-3 rounded-xl text-sm flex items-center gap-2 ${
+              smtpMessage.type === 'success'
+                ? 'bg-green-50 text-green-700 border border-green-100'
+                : 'bg-red-50 text-red-700 border border-red-100'
+            }`}>
+              {smtpMessage.type === 'success' ? <Icon.Check size={16} /> : <Icon.X size={16} />}
+              {smtpMessage.text}
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3 mt-6">
+            <Button
+              variant="secondary"
+              onClick={handleTestSmtp}
+              disabled={smtpTesting || !smtpEmail || !smtpPassword}
+              icon={<Icon.Activity size={16} />}
+              className="flex-1"
+            >
+              {smtpTesting ? 'Test en cours...' : 'Tester la connexion'}
+            </Button>
+            <Button
+              onClick={handleSaveSmtp}
+              disabled={smtpLoading || !smtpEmail || !smtpPassword}
+              icon={<Icon.Save size={16} />}
+              className="flex-1"
+            >
+              {smtpLoading ? 'Sauvegarde...' : 'Sauvegarder'}
+            </Button>
+          </div>
+        </Card>
       </div>
     </div>
   );

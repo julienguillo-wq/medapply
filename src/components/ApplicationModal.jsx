@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Card from './Card';
 import Button from './Button';
 import Badge from './Badge';
@@ -6,6 +6,7 @@ import { Icon } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
 import { cleanDirector, getEmail } from '../services/siwfService';
 import { createCandidature, updateCandidature } from '../services/candidaturesService';
+import { getEmailConfig, sendApplication } from '../services/emailConfigService';
 
 export default function ApplicationModal({ establishment, existingCandidature, onClose, onSaved }) {
   const { user, profile } = useAuth();
@@ -16,6 +17,18 @@ export default function ApplicationModal({ establishment, existingCandidature, o
   const [letter, setLetter] = useState(existingCandidature?.motivation_letter || '');
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState(null); // { type: 'success'|'error', text }
+  const [hasSmtpConfig, setHasSmtpConfig] = useState(false);
+
+  // Vérifier si l'utilisateur a configuré son email SMTP
+  useEffect(() => {
+    if (user?.id) {
+      getEmailConfig(user.id).then(({ data }) => {
+        setHasSmtpConfig(!!data?.smtp_verified);
+      });
+    }
+  }, [user?.id]);
 
   const userName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || user?.email || '';
   const userSpecialty = profile?.specialty || '';
@@ -115,48 +128,101 @@ La lettre doit être personnalisée pour cet établissement et cette spécialit�
   }
 
   async function handleSendEmail() {
-    // Save first, then open mailto
-    setSaving(true);
-    try {
-      let candidature = existingCandidature;
-      if (existingCandidature?.id) {
-        const result = await updateCandidature(existingCandidature.id, {
-          motivation_letter: letter,
-          director_email: emailInfo.email || '',
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-        });
-        if (result.data) candidature = result.data;
-      } else {
-        const result = await createCandidature(user.id, {
-          establishment_id: String(establishment.id),
-          establishment_name: establishment.name,
-          establishment_city: establishment.city || '',
-          establishment_canton: establishment.canton || '',
-          director_name: directorClean,
-          director_email: emailInfo.email || '',
-          specialty: establishment.specialty || '',
-          status: 'sent',
-          motivation_letter: letter,
-          sent_at: new Date().toISOString(),
-        });
-        if (result.data) candidature = result.data;
-      }
+    const emailTo = emailInfo.email || '';
+    const subject = `Candidature spontanée - ${establishment.specialty || 'Médecine'} - Dr ${userName}`;
 
-      if (candidature && onSaved) {
-        onSaved(candidature);
+    // Si pas de config SMTP, fallback sur mailto
+    if (!hasSmtpConfig) {
+      // Save first, then open mailto
+      setSaving(true);
+      try {
+        let candidature = existingCandidature;
+        if (existingCandidature?.id) {
+          const result = await updateCandidature(existingCandidature.id, {
+            motivation_letter: letter,
+            director_email: emailTo,
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+          });
+          if (result.data) candidature = result.data;
+        } else {
+          const result = await createCandidature(user.id, {
+            establishment_id: String(establishment.id),
+            establishment_name: establishment.name,
+            establishment_city: establishment.city || '',
+            establishment_canton: establishment.canton || '',
+            director_name: directorClean,
+            director_email: emailTo,
+            specialty: establishment.specialty || '',
+            status: 'sent',
+            motivation_letter: letter,
+            sent_at: new Date().toISOString(),
+          });
+          if (result.data) candidature = result.data;
+        }
+        if (candidature && onSaved) onSaved(candidature);
+      } catch (err) {
+        console.error('[ApplicationModal] Erreur sauvegarde avant envoi:', err);
+      } finally {
+        setSaving(false);
       }
-    } catch (err) {
-      console.error('[ApplicationModal] Erreur sauvegarde avant envoi:', err);
-    } finally {
-      setSaving(false);
+      window.open(`mailto:${emailTo}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(letter)}`, '_self');
+      return;
     }
 
-    // Open mailto
-    const email = emailInfo.email || '';
-    const subject = encodeURIComponent(`Candidature spontanée - ${establishment.specialty || 'Médecine'} - Dr ${userName}`);
-    const body = encodeURIComponent(letter);
-    window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_self');
+    // Envoi via SMTP
+    setSending(true);
+    setSendResult(null);
+    try {
+      const result = await sendApplication({
+        to: emailTo,
+        subject,
+        body: letter,
+        userName: `Dr ${userName}`,
+        userId: user.id,
+      });
+
+      if (result.success) {
+        // Sauvegarder la candidature comme envoyée
+        let candidature = existingCandidature;
+        if (existingCandidature?.id) {
+          const saveResult = await updateCandidature(existingCandidature.id, {
+            motivation_letter: letter,
+            director_email: emailTo,
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+          });
+          if (saveResult.data) candidature = saveResult.data;
+        } else {
+          const saveResult = await createCandidature(user.id, {
+            establishment_id: String(establishment.id),
+            establishment_name: establishment.name,
+            establishment_city: establishment.city || '',
+            establishment_canton: establishment.canton || '',
+            director_name: directorClean,
+            director_email: emailTo,
+            specialty: establishment.specialty || '',
+            status: 'sent',
+            motivation_letter: letter,
+            sent_at: new Date().toISOString(),
+          });
+          if (saveResult.data) candidature = saveResult.data;
+        }
+        if (candidature && onSaved) onSaved(candidature);
+
+        setSendResult({
+          type: 'success',
+          text: `Email envoyé avec succès${result.attachmentsCount ? ` (${result.attachmentsCount} pièce${result.attachmentsCount > 1 ? 's' : ''} jointe${result.attachmentsCount > 1 ? 's' : ''})` : ''} !`,
+        });
+      } else {
+        setSendResult({ type: 'error', text: result.error || 'Erreur lors de l\'envoi' });
+      }
+    } catch (err) {
+      console.error('[ApplicationModal] Erreur envoi SMTP:', err);
+      setSendResult({ type: 'error', text: 'Erreur lors de l\'envoi. Vérifiez votre configuration email.' });
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -258,18 +324,38 @@ La lettre doit être personnalisée pour cet établissement et cette spécialit�
               className="w-full min-h-[280px] p-4 border border-gray-200 rounded-xl text-sm leading-relaxed text-gray-700 resize-y focus:outline-none focus:border-primary transition-colors"
             />
 
-            <div className="flex items-start gap-2 mt-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-              <Icon.FileText size={16} className="text-amber-600 shrink-0 mt-0.5" />
-              <p className="text-[13px] text-amber-700">
-                N&apos;oubliez pas de joindre votre CV et vos documents lors de l&apos;envoi par email.
-              </p>
-            </div>
+            {hasSmtpConfig ? (
+              <div className="flex items-start gap-2 mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                <Icon.Mail size={16} className="text-blue-600 shrink-0 mt-0.5" />
+                <p className="text-[13px] text-blue-700">
+                  L&apos;email sera envoyé directement depuis votre Gmail avec vos documents en pièces jointes.
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 mt-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                <Icon.FileText size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-[13px] text-amber-700">
+                  Configurez votre email Gmail dans Profil pour envoyer directement avec pièces jointes. Sinon, l&apos;email s&apos;ouvrira dans votre client mail.
+                </p>
+              </div>
+            )}
+
+            {sendResult && (
+              <div className={`mt-3 p-3 rounded-xl text-sm flex items-center gap-2 ${
+                sendResult.type === 'success'
+                  ? 'bg-green-50 text-green-700 border border-green-100'
+                  : 'bg-red-50 text-red-700 border border-red-100'
+              }`}>
+                {sendResult.type === 'success' ? <Icon.Check size={16} /> : <Icon.X size={16} />}
+                {sendResult.text}
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-3 mt-5">
               <Button
                 variant="secondary"
                 onClick={handleSaveDraft}
-                disabled={saving}
+                disabled={saving || sending}
                 icon={<Icon.Save size={16} />}
                 className="flex-1"
               >
@@ -277,11 +363,11 @@ La lettre doit être personnalisée pour cet établissement et cette spécialit�
               </Button>
               <Button
                 onClick={handleSendEmail}
-                disabled={saving || !emailInfo.email}
+                disabled={saving || sending || !emailInfo.email}
                 icon={<Icon.Send size={16} />}
                 className="flex-1"
               >
-                Envoyer par email
+                {sending ? 'Envoi en cours...' : hasSmtpConfig ? 'Envoyer via Gmail' : 'Envoyer par email'}
               </Button>
             </div>
           </div>
