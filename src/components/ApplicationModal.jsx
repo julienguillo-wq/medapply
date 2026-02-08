@@ -80,7 +80,7 @@ export default function ApplicationModal({ establishment, existingCandidature, o
     try {
       const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
       if (!apiKey) {
-        setLetter("(Clé API Anthropic manquante — ajoutez VITE_ANTHROPIC_API_KEY dans .env)\n\nMadame, Monsieur,\n\nJe me permets de vous adresser ma candidature spontanée pour un poste de médecin assistant au sein de votre service de " + (establishment.specialty || 'médecine') + ".\n\nMon parcours de formation m'a permis de développer des compétences cliniques solides que je souhaite approfondir au sein de votre établissement, reconnu pour la qualité de sa formation postgraduée.\n\nJe reste à votre entière disposition pour un entretien et vous prie d'agréer, " + directorClean + ", l'expression de mes salutations distinguées.\n\nDr " + userName);
+        setLetter("(Clé API Anthropic manquante — ajoutez VITE_ANTHROPIC_API_KEY dans .env)\n\n" + directorClean + ",\n\nJe me permets de vous adresser ma candidature spontanée pour un poste de médecin assistant dans votre service de " + (establishment.specialty || 'médecine') + ". Vous trouverez ci-joint ma lettre de motivation, mon CV ainsi que mes diplômes.\n\nJe reste à votre disposition pour un entretien et vous adresse mes meilleures salutations.\n\nDr " + userName);
         setGenerating(false);
         return;
       }
@@ -88,13 +88,14 @@ export default function ApplicationModal({ establishment, existingCandidature, o
       // Tenter de récupérer la lettre de motivation uploadée
       const motivationLetter = await fetchUserMotivationLetter();
 
-      const systemPrompt = `Tu es un assistant spécialisé dans la rédaction de lettres de motivation médicales en Suisse.
-Rédige des lettres formelles en français avec vouvoiement.
-La lettre doit commencer directement par la formule d'appel (pas d'en-tête d'adresse).
-Utilise un ton professionnel, concis et respectueux.
-La lettre fait environ 200-250 mots.`;
+      const systemPrompt = `Tu es un assistant spécialisé dans la rédaction d'emails d'accompagnement pour des candidatures médicales en Suisse.
+Rédige un email d'accompagnement court et professionnel (5-8 lignes maximum) pour une candidature spontanée.
+La lettre de motivation complète, le CV et les diplômes seront joints en pièce jointe, il est donc inutile de répéter leur contenu.
+L'email doit : se présenter brièvement, exprimer l'intérêt pour le poste/service, mentionner les pièces jointes, et conclure avec une formule de politesse suisse.
+Rédige en français avec vouvoiement.
+L'email commence directement par la formule d'appel (pas d'en-tête d'adresse, pas d'objet).`;
 
-      let userPromptText = `Rédige une lettre de motivation spontanée pour un poste de médecin assistant avec ces informations :
+      let userPromptText = `Rédige un email d'accompagnement court (5-8 lignes) pour une candidature spontanée de médecin assistant avec ces informations :
 
 Candidat : Dr ${userName}
 Spécialité visée : ${establishment.specialty || userSpecialty || 'médecine'}
@@ -103,7 +104,7 @@ Ville : ${establishment.city || ''} (${establishment.canton || ''})
 Directeur : ${directorClean}
 ${userSpecialty ? `Spécialité du candidat : ${userSpecialty}` : ''}
 
-La lettre doit être personnalisée pour cet établissement et cette spécialité.`;
+Rappel : la lettre de motivation détaillée, le CV et les diplômes sont en pièces jointes. L'email doit être bref et donner envie d'ouvrir les documents joints.`;
 
       // Construire le contenu du message selon le type de lettre récupérée
       let messageContent;
@@ -111,7 +112,7 @@ La lettre doit être personnalisée pour cet établissement et cette spécialit�
       if (motivationLetter?.type === 'text') {
         userPromptText += `
 
-Voici la lettre de motivation personnelle du candidat. Inspire-toi fortement de son style, ton et arguments pour rédiger une version adaptée à l'établissement ciblé. Améliore la formulation tout en gardant la personnalité du candidat.
+Voici la lettre de motivation personnelle du candidat qui sera jointe. Inspire-toi de son style et ton pour rédiger l'email d'accompagnement, sans répéter le contenu de la lettre.
 
 --- LETTRE DU CANDIDAT ---
 ${motivationLetter.content}
@@ -120,7 +121,7 @@ ${motivationLetter.content}
       } else if (motivationLetter?.type === 'document') {
         userPromptText += `
 
-Voici la lettre de motivation personnelle du candidat en pièce jointe. Inspire-toi fortement de son style, ton et arguments pour rédiger une version adaptée à l'établissement ciblé. Améliore la formulation tout en gardant la personnalité du candidat.`;
+Voici la lettre de motivation personnelle du candidat qui sera jointe (en pièce jointe ci-dessous). Inspire-toi de son style et ton pour rédiger l'email d'accompagnement, sans répéter le contenu de la lettre.`;
         messageContent = [
           {
             type: 'document',
@@ -357,7 +358,7 @@ Voici la lettre de motivation personnelle du candidat en pièce jointe. Inspire-
               <Icon.Sparkle size={28} />
             </div>
             <p className="text-gray-500 text-sm mb-6">
-              Générez une lettre de motivation personnalisée avec l&apos;IA
+              Générez un email d&apos;accompagnement personnalisé avec l&apos;IA
             </p>
             <Button
               onClick={handleGenerate}
@@ -374,7 +375,7 @@ Voici la lettre de motivation personnelle du candidat en pièce jointe. Inspire-
               <Icon.Sparkle size={28} />
             </div>
             <p className="text-gray-600 font-medium mb-2">Génération en cours...</p>
-            <p className="text-gray-400 text-sm mb-6">L&apos;IA rédige votre lettre personnalisée</p>
+            <p className="text-gray-400 text-sm mb-6">L&apos;IA rédige votre email d&apos;accompagnement</p>
             <div className="w-[200px] h-1 bg-gray-100 rounded-full mx-auto overflow-hidden">
               <div className="w-[30%] h-full bg-gradient-to-r from-primary via-primary-light to-primary rounded-full animate-shimmer" />
             </div>
@@ -407,7 +408,7 @@ Voici la lettre de motivation personnelle du candidat en pièce jointe. Inspire-
             </div>
 
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-gray-700">Lettre de motivation</label>
+              <label className="text-sm font-semibold text-gray-700">Email d&apos;accompagnement</label>
               <Button
                 variant="ghost"
                 size="small"
