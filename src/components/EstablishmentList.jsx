@@ -8,6 +8,11 @@ import { getEmail, saveManualEmail } from '../services/siwfService';
 
 const PAGE_SIZE = 20;
 
+function cleanDirector(name) {
+  if (!name) return '—';
+  return name.replace(/^(Herr|Frau)\s+/i, '');
+}
+
 function EmailCell({ establishment }) {
   const [editing, setEditing] = useState(false);
   const [emailInfo, setEmailInfo] = useState(() => getEmail(establishment));
@@ -54,7 +59,7 @@ function EmailCell({ establishment }) {
     <div className="flex items-center gap-1.5">
       {emailInfo.email ? (
         <>
-          <a href={`mailto:${emailInfo.email}`} className="text-primary hover:underline truncate text-[13px]">
+          <a href={`mailto:${emailInfo.email}`} className="text-primary hover:underline text-xs break-all leading-tight">
             {emailInfo.email}
           </a>
           {emailInfo.source === 'pattern' && (
@@ -134,7 +139,7 @@ export default function EstablishmentList({ establishments }) {
                 <span className="text-gray-400 text-[13px]">—</span>
               )}
             </div>
-            <div className="text-gray-600 text-[13px] truncate">{est.director || '—'}</div>
+            <div className="text-gray-600 text-[13px]">{cleanDirector(est.director)}</div>
             <div className="min-w-0">
               <EmailCell establishment={est} />
             </div>
