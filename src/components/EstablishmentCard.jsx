@@ -110,22 +110,24 @@ export default function EstablishmentCard({ establishment, onApply }) {
             ) : (
               <span className="text-gray-400">Pas d&apos;email</span>
             )}
-            {emailInfo.status === 'invalid' ? (
-              <button
-                onClick={startEdit}
-                className="text-red-500 hover:text-red-700 shrink-0 cursor-pointer text-[11px] font-medium"
-                title="Corriger l'email invalide"
-              >
-                Corriger
-              </button>
-            ) : (
-              <button
-                onClick={startEdit}
-                className="text-gray-400 hover:text-primary shrink-0 cursor-pointer"
-                title="Modifier l'email"
-              >
-                <Icon.Edit size={14} />
-              </button>
+            {emailInfo.status !== 'validated' && emailInfo.status !== 'manually_verified' && (
+              emailInfo.status === 'invalid' ? (
+                <button
+                  onClick={startEdit}
+                  className="text-red-500 hover:text-red-700 shrink-0 cursor-pointer text-[11px] font-medium"
+                  title="Corriger l'email invalide"
+                >
+                  Corriger
+                </button>
+              ) : (
+                <button
+                  onClick={startEdit}
+                  className="text-gray-400 hover:text-primary shrink-0 cursor-pointer"
+                  title="Modifier l'email"
+                >
+                  <Icon.Edit size={14} />
+                </button>
+              )
             )}
           </div>
         )}
