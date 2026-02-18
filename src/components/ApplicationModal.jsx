@@ -71,12 +71,21 @@ export default function ApplicationModal({ establishment, existingCandidature, o
   const [sendResult, setSendResult] = useState(null); // { type: 'success'|'error', text }
   const [hasSmtpConfig, setHasSmtpConfig] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState(existingCandidature?.director_email || emailInfo.email || '');
+  const [emailManuallyEdited, setEmailManuallyEdited] = useState(false);
+  const [mailSubject, setMailSubject] = useState(
+    `Candidature spontanée - ${establishment.specialty || 'Médecine'} - Dr ${[profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || ''}`
+  );
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [userDocuments, setUserDocuments] = useState([]);
 
-  // Vérifier si l'utilisateur a configuré son email SMTP
+  // Vérifier si l'utilisateur a configuré son email SMTP + charger les documents
   useEffect(() => {
     if (user?.id) {
       getEmailConfig(user.id).then(({ data }) => {
         setHasSmtpConfig(!!data?.smtp_verified);
+      });
+      getDocuments(user.id).then(({ data }) => {
+        if (data) setUserDocuments(data);
       });
     }
   }, [user?.id]);
@@ -265,9 +274,14 @@ Voici la lettre de motivation personnelle du candidat qui sera jointe (en pièce
     }
   }
 
-  async function handleSendEmail() {
+  function handleSendClick() {
+    setShowConfirmation(true);
+  }
+
+  async function handleConfirmSend() {
+    setShowConfirmation(false);
     const emailTo = recipientEmail;
-    const subject = `Candidature spontanée - ${establishment.specialty || 'Médecine'} - Dr ${userName}`;
+    const subject = mailSubject;
 
     // Si pas de config SMTP, fallback sur mailto
     if (!hasSmtpConfig) {
@@ -363,6 +377,13 @@ Voici la lettre de motivation personnelle du candidat qui sera jointe (en pièce
     }
   }
 
+  function formatFileSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} o`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+  }
+
   return (
     <div
       className="animate-fade fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 md:p-10"
@@ -453,19 +474,36 @@ Voici la lettre de motivation personnelle du candidat qui sera jointe (en pièce
                 <input
                   type="email"
                   value={recipientEmail}
-                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  onChange={(e) => { setRecipientEmail(e.target.value); setEmailManuallyEdited(true); }}
                   placeholder="email@exemple.com"
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary transition-colors"
                 />
               </div>
+              {emailInfo.source === 'pattern' && !emailManuallyEdited && (
+                <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
+                  <span>&#9888;&#65039;</span> Email généré automatiquement — vérifiez qu&apos;il est correct avant d&apos;envoyer
+                </p>
+              )}
               {emailInfo.email && recipientEmail !== emailInfo.email && (
                 <button
-                  onClick={() => setRecipientEmail(emailInfo.email)}
+                  onClick={() => { setRecipientEmail(emailInfo.email); setEmailManuallyEdited(false); }}
                   className="text-xs text-primary hover:underline mt-1 cursor-pointer"
                 >
                   Rétablir l&apos;email suggéré ({emailInfo.email})
                 </button>
               )}
+            </div>
+
+            {/* Editable mail subject */}
+            <div className="mb-4">
+              <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Objet du mail</label>
+              <input
+                type="text"
+                value={mailSubject}
+                onChange={(e) => setMailSubject(e.target.value)}
+                placeholder="Objet du mail"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary transition-colors"
+              />
             </div>
 
             <div className="flex items-center justify-between mb-2">
@@ -523,7 +561,7 @@ Voici la lettre de motivation personnelle du candidat qui sera jointe (en pièce
                 {saving ? 'Sauvegarde...' : 'Sauvegarder brouillon'}
               </Button>
               <Button
-                onClick={handleSendEmail}
+                onClick={handleSendClick}
                 disabled={saving || sending || !recipientEmail}
                 icon={<Icon.Send size={16} />}
                 className="flex-1"
@@ -534,6 +572,70 @@ Voici la lettre de motivation personnelle du candidat qui sera jointe (en pièce
           </div>
         )}
       </Card>
+
+      {/* Confirmation modal */}
+      {showConfirmation && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[110] p-4"
+          onClick={() => setShowConfirmation(false)}
+        >
+          <div
+            className="animate-scale bg-white rounded-2xl shadow-2xl max-w-[480px] w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h4 className="text-lg font-bold mb-4">Confirmer l&apos;envoi</h4>
+
+            <div className="space-y-3 text-sm">
+              <div>
+                <span className="font-semibold text-gray-500">Destinataire :</span>{' '}
+                <span className="text-gray-800">{directorClean || 'N/A'} ({recipientEmail})</span>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-500">Objet :</span>{' '}
+                <span className="text-gray-800">{mailSubject}</span>
+              </div>
+              {hasSmtpConfig && userDocuments.length > 0 && (
+                <div>
+                  <span className="font-semibold text-gray-500">Pièces jointes :</span>
+                  <ul className="mt-1.5 space-y-1">
+                    {userDocuments.map((doc) => (
+                      <li key={doc.id} className="flex items-center gap-2 text-gray-700">
+                        <Icon.File size={14} className="text-gray-400 shrink-0" />
+                        <span>{doc.file_name || doc.name}</span>
+                        {doc.file_size && (
+                          <span className="text-gray-400 text-xs">({formatFileSize(doc.file_size)})</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {!hasSmtpConfig && (
+                <p className="text-xs text-amber-600">
+                  L&apos;email s&apos;ouvrira dans votre client mail (pas de pièces jointes automatiques).
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="secondary"
+                onClick={() => setShowConfirmation(false)}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleConfirmSend}
+                icon={<Icon.Send size={16} />}
+                className="flex-1"
+              >
+                Confirmer l&apos;envoi
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

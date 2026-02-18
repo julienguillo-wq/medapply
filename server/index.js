@@ -131,7 +131,31 @@ app.post('/api/send-application', async (req, res) => {
       }
     }
 
-    // 3. Créer le transporteur SMTP
+    // 3. Récupérer le profil utilisateur pour la signature
+    let signature = '';
+    try {
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, specialty, phone, email')
+        .eq('id', userId)
+        .single();
+
+      if (userProfile) {
+        const sigParts = [];
+        const fullName = [userProfile.first_name, userProfile.last_name].filter(Boolean).join(' ');
+        if (fullName) sigParts.push(`Dr. ${fullName}`);
+        if (userProfile.specialty) sigParts.push(`Médecin assistant(e) en ${userProfile.specialty}`);
+        if (userProfile.phone) sigParts.push(`Tél : ${userProfile.phone}`);
+        if (userProfile.email) sigParts.push(userProfile.email);
+        if (sigParts.length > 0) {
+          signature = '\n\n—\n' + sigParts.join('\n');
+        }
+      }
+    } catch (sigErr) {
+      console.warn('[send-application] Impossible de charger le profil pour la signature:', sigErr.message);
+    }
+
+    // 4. Créer le transporteur SMTP
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
@@ -142,13 +166,13 @@ app.post('/api/send-application', async (req, res) => {
       },
     });
 
-    // 4. Envoyer l'email
+    // 5. Envoyer l'email
     const mailOptions = {
       from: `${userName || emailConfig.email_address} <${emailConfig.email_address}>`,
       to,
       replyTo: emailConfig.email_address,
       subject,
-      text: body,
+      text: body + signature,
       attachments,
     };
 
