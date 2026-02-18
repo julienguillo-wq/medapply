@@ -188,8 +188,8 @@ app.post('/api/send-application', async (req, res) => {
       if (userProfile) {
         const sigParts = [];
         const fullName = [userProfile.first_name, userProfile.last_name].filter(Boolean).join(' ');
-        if (fullName) sigParts.push(`Dr. ${fullName}`);
-        if (userProfile.specialty) sigParts.push(`Médecin assistant(e) en ${userProfile.specialty}`);
+        if (fullName) sigParts.push(fullName);
+        if (userProfile.specialty) sigParts.push(`Médecin assistante en ${userProfile.specialty}`);
         if (userProfile.phone) sigParts.push(`Tél : ${userProfile.phone}`);
         if (userProfile.email) sigParts.push(userProfile.email);
         if (sigParts.length > 0) {

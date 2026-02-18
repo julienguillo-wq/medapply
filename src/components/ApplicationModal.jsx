@@ -74,7 +74,7 @@ export default function ApplicationModal({ establishment, existingCandidature, o
   const [recipientEmail, setRecipientEmail] = useState(existingCandidature?.director_email || emailInfo.email || '');
   const [emailManuallyEdited, setEmailManuallyEdited] = useState(false);
   const [mailSubject, setMailSubject] = useState(
-    `Candidature spontanée - ${establishment.specialty || 'Médecine'} - Dr ${[profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || ''}`
+    `Candidature spontanée - ${establishment.specialty || 'Médecine'} - ${[profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || ''}`
   );
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [userDocuments, setUserDocuments] = useState([]);
@@ -192,7 +192,7 @@ Giulia Scattu`);
         to: emailTo,
         subject,
         body: letter,
-        userName: `Dr ${userName}`,
+        userName,
         userId: user.id,
         establishmentId: String(establishment.id),
       });
