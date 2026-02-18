@@ -8,7 +8,7 @@ import { cleanDirector, getEmail } from '../services/siwfService';
 import EmailStatusBadge from './EmailStatusBadge';
 import { createCandidature, updateCandidature } from '../services/candidaturesService';
 import { getEmailConfig, sendApplication } from '../services/emailConfigService';
-import { getDocuments, getSignedUrl } from '../services/documentsService';
+import { getDocuments } from '../services/documentsService';
 
 // Construit une formule d'appel personnalisée à partir du nom brut du directeur
 // Ex: "Herr Prof. Dr. med. Hans Müller" → "Monsieur le Professeur Müller"
@@ -94,153 +94,14 @@ export default function ApplicationModal({ establishment, existingCandidature, o
   const userName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || user?.email || '';
   const userSpecialty = profile?.specialty || '';
 
-  // Récupérer le contenu texte de la lettre de motivation uploadée
-  async function fetchUserMotivationLetter() {
-    if (!user?.id) return null;
-    try {
-      const { data: docs } = await getDocuments(user.id, 'lettre_motivation');
-      if (!docs || docs.length === 0) return null;
+  function handleGenerate() {
+    const directorName = directorClean || 'Madame, Monsieur';
+    setLetter(`Cher Docteur ${directorName},
 
-      const doc = docs[0]; // Le plus récent
-      const { url } = await getSignedUrl(doc.file_path);
-      if (!url) return null;
+Je m\u2019appelle Giulia Scattu et je souhaite d\u00e9poser ma candidature pour un poste de m\u00e9decin assistante au sein de votre service. J\u2019ai obtenu mon dipl\u00f4me en m\u00e9decine et chirurgie \u00e0 l\u2019Universit\u00e9 Vest Vasile Goldis d\u2019Arad (Roumanie) le 14 septembre 2024. D\u00e8s la fin de ma premi\u00e8re ann\u00e9e d\u2019\u00e9tudes, j\u2019ai effectu\u00e9 plusieurs stages pratiques dans des h\u00f4pitaux en Italie, en Roumanie et en Suisse. Plus r\u00e9cemment, j\u2019ai eu l\u2019opportunit\u00e9 d\u2019effectuer un stage \u00e0 l\u2019UGA de La Chaux-de-Fonds, ainsi que ma premi\u00e8re ann\u00e9e de formation en rotation entre le service de r\u00e9adaptation musculo squelettique et neurologique de Val-de-Ruz et l\u2019UGA de La Chaux-de-Fonds, et \u00e0 partir de Mai 2026 je serai dans le service des urgences de Neuch\u00e2tel. \u00c0 partir d\u2019octobre 2024, apr\u00e8s l\u2019obtention de mon dipl\u00f4me, je participerai \u00e9galement \u00e0 un stage organis\u00e9 par le Rotary en France, d\u2019abord en oncologie, puis en cardiologie \u00e0 Beauvais. Je souhaiterais vivement int\u00e9grer votre service en qualit\u00e9 de m\u00e9decin assistante \u00e0 partir du 1er Mai 2027. En esp\u00e9rant que ma candidature retiendra votre attention, je reste \u00e0 votre disposition pour toute information compl\u00e9mentaire et je vous prie d\u2019agr\u00e9er, Madame, Monsieur, l\u2019expression de mes salutations distingu\u00e9es.
 
-      const mime = doc.mime_type || '';
-
-      // Fichier texte : récupérer le contenu directement
-      if (mime === 'text/plain' || doc.file_name?.endsWith('.txt')) {
-        const res = await fetch(url);
-        if (!res.ok) return null;
-        const text = await res.text();
-        return { type: 'text', content: text, fileName: doc.file_name };
-      }
-
-      // PDF ou DOCX : envoyer en base64 via l'API vision de Claude
-      if (mime === 'application/pdf' || mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        const res = await fetch(url);
-        if (!res.ok) return null;
-        const blob = await res.blob();
-        const buffer = await blob.arrayBuffer();
-        const base64 = btoa(
-          new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-        );
-        return { type: 'document', mediaType: mime, base64, fileName: doc.file_name };
-      }
-
-      return null;
-    } catch (err) {
-      console.warn('[ApplicationModal] Impossible de charger la lettre de motivation:', err.message);
-      return null;
-    }
-  }
-
-  async function handleGenerate() {
-    setGenerating(true);
-    try {
-      const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-      if (!apiKey) {
-        setLetter("(Clé API Anthropic manquante — ajoutez VITE_ANTHROPIC_API_KEY dans .env)\n\n" + salutation + ",\n\nJe me permets de vous adresser ma candidature spontanée pour un poste de médecin assistant dans votre service de " + (establishment.specialty || 'médecine') + ". Vous trouverez ci-joint ma lettre de motivation, mon CV ainsi que mes diplômes.\n\nJe reste à votre disposition pour un entretien et vous adresse mes meilleures salutations.\n\nDr " + userName);
-        setGenerating(false);
-        return;
-      }
-
-      // Tenter de récupérer la lettre de motivation uploadée
-      const motivationLetter = await fetchUserMotivationLetter();
-
-      const systemPrompt = `Tu es un assistant spécialisé dans la rédaction d'emails d'accompagnement pour des candidatures médicales en Suisse.
-Rédige un email d'accompagnement court et professionnel (5-8 lignes maximum) pour une candidature spontanée.
-La lettre de motivation complète, le CV et les diplômes seront joints en pièce jointe, il est donc inutile de répéter leur contenu.
-L'email doit : se présenter brièvement, exprimer l'intérêt pour le poste/service, mentionner les pièces jointes, et conclure avec une formule de politesse suisse.
-Rédige en français avec vouvoiement.
-L'email commence directement par la formule d'appel (pas d'en-tête d'adresse, pas d'objet).
-
-FORMULE D'APPEL :
-- Utiliser EXACTEMENT la formule d'appel fournie dans les données (ex: "Monsieur le Professeur Müller"). Ne JAMAIS la modifier ni utiliser "Madame, Monsieur" si un nom est fourni.
-- Suivre la formule d'appel d'une virgule puis retour à la ligne.
-
-RÈGLES IMPÉRATIVES SUR LE VOCABULAIRE MÉDICAL :
-- Le candidat est un MÉDECIN ASSISTANT en formation postgraduée, PAS un spécialiste confirmé.
-- Ne JAMAIS écrire "spécialisé en", "fort d'une expérience en", "expert en" ou toute formulation qui implique un titre de spécialiste obtenu.
-- Utiliser : "actuellement en formation postgraduée en [spécialité]", "médecin assistant en [spécialité]", ou "actuellement en tournée/tournus dans le service de [spécialité]".
-- Écrire "je souhaite poursuivre ma formation en..." et NON "orienter ma carrière vers..." ou "mettre mes compétences de spécialiste au service de...".
-- Le candidat CHERCHE un poste de formation, il ne propose pas ses services de spécialiste.`;
-
-      let userPromptText = `Rédige un email d'accompagnement court (5-8 lignes) pour une candidature spontanée de médecin assistant avec ces informations :
-
-Candidat : Dr ${userName}
-Spécialité visée : ${establishment.specialty || userSpecialty || 'médecine'}
-Établissement : ${establishment.name}
-Ville : ${establishment.city || ''} (${establishment.canton || ''})
-Directeur : ${directorClean}
-Formule d'appel à utiliser : ${salutation}
-${userSpecialty ? `Formation actuelle du candidat : médecin assistant en ${userSpecialty}` : ''}
-
-Rappel : la lettre de motivation détaillée, le CV et les diplômes sont en pièces jointes. L'email doit être bref et donner envie d'ouvrir les documents joints.`;
-
-      // Construire le contenu du message selon le type de lettre récupérée
-      let messageContent;
-
-      if (motivationLetter?.type === 'text') {
-        userPromptText += `
-
-Voici la lettre de motivation personnelle du candidat qui sera jointe. Inspire-toi de son style et ton pour rédiger l'email d'accompagnement, sans répéter le contenu de la lettre.
-
---- LETTRE DU CANDIDAT ---
-${motivationLetter.content}
---- FIN DE LA LETTRE ---`;
-        messageContent = userPromptText;
-      } else if (motivationLetter?.type === 'document') {
-        userPromptText += `
-
-Voici la lettre de motivation personnelle du candidat qui sera jointe (en pièce jointe ci-dessous). Inspire-toi de son style et ton pour rédiger l'email d'accompagnement, sans répéter le contenu de la lettre.`;
-        messageContent = [
-          {
-            type: 'document',
-            source: {
-              type: 'base64',
-              media_type: motivationLetter.mediaType,
-              data: motivationLetter.base64,
-            },
-          },
-          { type: 'text', text: userPromptText },
-        ];
-      } else {
-        messageContent = userPromptText;
-      }
-
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1024,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: messageContent }],
-        }),
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error('[ApplicationModal] API error:', res.status, errText);
-        setLetter("Erreur lors de la génération. Veuillez réessayer.");
-        setGenerating(false);
-        return;
-      }
-
-      const data = await res.json();
-      const text = data.content?.[0]?.text || "Erreur : aucune réponse de l'IA.";
-      setLetter(text);
-    } catch (err) {
-      console.error('[ApplicationModal] Erreur génération:', err);
-      setLetter("Erreur lors de la génération. Vérifiez votre connexion et réessayez.");
-    } finally {
-      setGenerating(false);
-    }
+Mes meilleures salutations,
+Giulia Scattu`);
   }
 
   async function handleSaveDraft() {
@@ -447,7 +308,7 @@ Voici la lettre de motivation personnelle du candidat qui sera jointe (en pièce
               <Icon.Sparkle size={28} />
             </div>
             <p className="text-gray-500 text-sm mb-6">
-              Générez un email d&apos;accompagnement personnalisé avec l&apos;IA
+              Générez votre lettre de motivation personnalisée
             </p>
             <Button
               onClick={handleGenerate}
