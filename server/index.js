@@ -64,6 +64,49 @@ app.post('/api/test-smtp', async (req, res) => {
 });
 
 // ============================================================
+// POST /api/update-email
+// Met à jour l'email d'un établissement (validation manuelle)
+// ============================================================
+app.post('/api/update-email', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token d\'authentification requis' });
+  }
+
+  const { establishmentId, email, userId } = req.body;
+  if (!establishmentId || !userId) {
+    return res.status(400).json({ error: 'establishmentId et userId requis' });
+  }
+
+  try {
+    const admin = getSupabaseAdmin();
+    const upsertData = {
+      establishment_id: String(establishmentId),
+      email_manual: email || null,
+      email_status: email ? 'manually_verified' : 'suggested',
+      email_validated_by: userId,
+      email_validated_at: email ? new Date().toISOString() : null,
+    };
+
+    const { data, error } = await admin
+      .from('establishment_emails')
+      .upsert(upsertData, { onConflict: 'establishment_id' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[update-email] Erreur:', error.message);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.json({ success: true, data });
+  } catch (err) {
+    console.error('[update-email] Erreur:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
 // POST /api/send-application
 // Envoie un email de candidature via SMTP Gmail
 // ============================================================
@@ -81,6 +124,7 @@ app.post('/api/send-application', async (req, res) => {
     body,
     userName,
     userId,
+    establishmentId,
   } = req.body;
 
   if (!to || !subject || !body || !userId) {
@@ -180,6 +224,23 @@ app.post('/api/send-application', async (req, res) => {
     const info = await transporter.sendMail(mailOptions);
     console.log('[send-application] Email envoyé:', info.messageId);
 
+    // Mark email as validated in establishment_emails
+    if (establishmentId) {
+      try {
+        const admin = getSupabaseAdmin();
+        await admin
+          .from('establishment_emails')
+          .upsert({
+            establishment_id: String(establishmentId),
+            email_status: 'validated',
+            email_validated_at: new Date().toISOString(),
+            email_validated_by: userId,
+          }, { onConflict: 'establishment_id' });
+      } catch (valErr) {
+        console.warn('[send-application] Validation tracking failed:', valErr.message);
+      }
+    }
+
     return res.json({
       success: true,
       messageId: info.messageId,
@@ -187,8 +248,38 @@ app.post('/api/send-application', async (req, res) => {
     });
   } catch (err) {
     console.error('[send-application] Erreur envoi:', err.message);
+
+    // Detect bounce errors and mark as invalid
+    let bounce = false;
+    if (establishmentId) {
+      const bouncePattern = /\b(550|551|553|mailbox not found|user unknown|no such user|address rejected)\b/i;
+      if (bouncePattern.test(err.message)) {
+        bounce = true;
+        try {
+          const admin = getSupabaseAdmin();
+          // Increment bounce_count via raw upsert
+          const { data: existing } = await admin
+            .from('establishment_emails')
+            .select('bounce_count')
+            .eq('establishment_id', String(establishmentId))
+            .single();
+
+          await admin
+            .from('establishment_emails')
+            .upsert({
+              establishment_id: String(establishmentId),
+              email_status: 'invalid',
+              bounce_count: (existing?.bounce_count || 0) + 1,
+            }, { onConflict: 'establishment_id' });
+        } catch (valErr) {
+          console.warn('[send-application] Bounce tracking failed:', valErr.message);
+        }
+      }
+    }
+
     return res.status(500).json({
       error: `Erreur lors de l'envoi : ${err.message}`,
+      bounce,
     });
   }
 });

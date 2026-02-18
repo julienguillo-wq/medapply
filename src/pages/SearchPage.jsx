@@ -19,6 +19,7 @@ export default function SearchPage() {
     cantonCounts,
     filtered,
     totalCount,
+    emailStats,
   } = useSiwfData();
 
   if (error) {
@@ -160,6 +161,28 @@ export default function SearchPage() {
       {/* Establishment list */}
       {!loading && showingFiltered && (
         <div className="mt-7">
+          {/* Email validation stats */}
+          {emailStats && (
+            <div className="flex flex-wrap items-center gap-4 mb-4 text-[13px] text-gray-500">
+              <span className="font-medium text-gray-600">Emails :</span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
+                {emailStats.validated} vérifié{emailStats.validated > 1 ? 's' : ''}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-blue-400" />
+                {emailStats.manually_verified} confirmé{emailStats.manually_verified > 1 ? 's' : ''}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-amber-400" />
+                {emailStats.suggested} suggéré{emailStats.suggested > 1 ? 's' : ''}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-red-400" />
+                {emailStats.invalid} invalide{emailStats.invalid > 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
           <EstablishmentList establishments={filtered} />
         </div>
       )}

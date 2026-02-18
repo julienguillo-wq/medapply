@@ -5,6 +5,7 @@ import Badge from './Badge';
 import { Icon } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
 import { cleanDirector, getEmail } from '../services/siwfService';
+import EmailStatusBadge from './EmailStatusBadge';
 import { createCandidature, updateCandidature } from '../services/candidaturesService';
 import { getEmailConfig, sendApplication } from '../services/emailConfigService';
 import { getDocuments, getSignedUrl } from '../services/documentsService';
@@ -332,6 +333,7 @@ Voici la lettre de motivation personnelle du candidat qui sera jointe (en pièce
         body: letter,
         userName: `Dr ${userName}`,
         userId: user.id,
+        establishmentId: String(establishment.id),
       });
 
       if (result.success) {
@@ -419,19 +421,24 @@ Voici la lettre de motivation personnelle du candidat qui sera jointe (en pièce
             <span>{directorClean}</span>
           </div>
         )}
-        <div className="flex items-center gap-2 text-sm mb-5">
+        <div className="flex items-center gap-2 text-sm mb-2">
           <Icon.Mail size={15} className="text-gray-400 shrink-0" />
           {emailInfo.email ? (
-            <span className="text-gray-600">
-              {emailInfo.email}
-              {emailInfo.source === 'pattern' && (
-                <span className="text-[11px] text-gray-400 ml-1.5">(suggéré)</span>
-              )}
-            </span>
+            <span className="text-gray-600">{emailInfo.email}</span>
           ) : (
             <span className="text-gray-400">Pas d&apos;email disponible</span>
           )}
+          <EmailStatusBadge status={emailInfo.status} compact />
         </div>
+        {emailInfo.status === 'invalid' && (
+          <div className="flex items-start gap-2 mb-5 p-2.5 bg-red-50 border border-red-100 rounded-xl">
+            <Icon.AlertTriangle size={15} className="text-red-500 shrink-0 mt-0.5" />
+            <p className="text-[13px] text-red-600">
+              Cet email a été détecté comme invalide (bounce). Vérifiez l&apos;adresse avant d&apos;envoyer.
+            </p>
+          </div>
+        )}
+        {emailInfo.status !== 'invalid' && <div className="mb-3" />}
 
         {/* Letter section */}
         {!letter && !generating && (

@@ -4,9 +4,14 @@ import {
   loadSpecialties,
   filterEstablishments,
   computeCantonCounts,
+  getEmail,
+  migrateLocalStorageEmails,
 } from '../services/siwfService';
+import { loadEmailValidationData } from '../services/emailValidationService';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function useSiwfData() {
+  const { user } = useAuth();
   const [allEstablishments, setAllEstablishments] = useState([]);
   const [allSpecialties, setAllSpecialties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +37,7 @@ export default function useSiwfData() {
         const [establishments, specialties] = await Promise.all([
           loadEstablishments(),
           loadSpecialties(),
+          loadEmailValidationData(),
         ]);
         if (!cancelled) {
           setAllEstablishments(establishments);
@@ -67,6 +73,15 @@ export default function useSiwfData() {
     [allEstablishments, selectedSpecialties]
   );
 
+  // Migrate localStorage emails to backend (once after load)
+  const migrationDone = useRef(false);
+  useEffect(() => {
+    if (!loading && user?.id && !migrationDone.current) {
+      migrationDone.current = true;
+      migrateLocalStorageEmails(user.id);
+    }
+  }, [loading, user?.id]);
+
   // Filtered establishments
   const filtered = useMemo(
     () => filterEstablishments(allEstablishments, {
@@ -76,6 +91,18 @@ export default function useSiwfData() {
     }),
     [allEstablishments, selectedCantons, selectedSpecialties, debouncedQuery]
   );
+
+  // Email validation stats for filtered results
+  const emailStats = useMemo(() => {
+    const stats = { validated: 0, suggested: 0, invalid: 0, manually_verified: 0 };
+    for (const est of filtered) {
+      const info = getEmail(est);
+      const s = info.status || 'suggested';
+      if (s in stats) stats[s]++;
+      else stats.suggested++;
+    }
+    return stats;
+  }, [filtered]);
 
   return {
     loading,
@@ -90,5 +117,6 @@ export default function useSiwfData() {
     cantonCounts,
     filtered,
     totalCount: allEstablishments.length,
+    emailStats,
   };
 }

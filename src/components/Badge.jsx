@@ -4,6 +4,7 @@ export default function Badge({ children, variant = 'default', icon }) {
     success: 'bg-success-bg text-emerald-700',
     warning: 'bg-warning-bg text-amber-700',
     error: 'bg-error-bg text-red-700',
+    info: 'bg-blue-50 text-blue-700',
     primary: 'bg-primary-bg text-primary',
   };
 

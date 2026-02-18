@@ -2,13 +2,18 @@ import { useState } from 'react';
 import Badge from './Badge';
 import Button from './Button';
 import { Icon } from './Icons';
-import { getEmail, saveManualEmail } from '../services/siwfService';
+import { getEmail } from '../services/siwfService';
+import { updateEstablishmentEmail } from '../services/emailValidationService';
+import { useAuth } from '../contexts/AuthContext';
+import EmailStatusBadge from './EmailStatusBadge';
 
 export default function EstablishmentCard({ establishment, onApply }) {
+  const { user } = useAuth();
   const { id, name, city, canton, specialty, category, director, homepage } = establishment;
   const [editing, setEditing] = useState(false);
   const [emailInfo, setEmailInfo] = useState(() => getEmail(establishment));
   const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const siwfUrl = `https://register.siwf.ch/SiwfRegister/Detail/${id}?suchDatum=${new Date().toISOString().split('T')[0]}`;
 
@@ -17,11 +22,28 @@ export default function EstablishmentCard({ establishment, onApply }) {
     setEditing(true);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     const trimmed = draft.trim();
-    saveManualEmail(id, trimmed);
-    setEmailInfo(trimmed ? { email: trimmed, source: 'manual' } : getEmail(establishment));
-    setEditing(false);
+    setSaving(true);
+    try {
+      await updateEstablishmentEmail({
+        establishmentId: id,
+        email: trimmed,
+        userId: user?.id,
+      });
+      setEmailInfo(trimmed
+        ? { email: trimmed, source: 'manual', status: 'manually_verified', bounceCount: 0 }
+        : getEmail(establishment)
+      );
+    } catch {
+      setEmailInfo(trimmed
+        ? { email: trimmed, source: 'manual', status: 'manually_verified', bounceCount: 0 }
+        : getEmail(establishment)
+      );
+    } finally {
+      setSaving(false);
+      setEditing(false);
+    }
   };
 
   const cancelEdit = () => setEditing(false);
@@ -77,26 +99,34 @@ export default function EstablishmentCard({ establishment, onApply }) {
           </div>
         ) : (
           <div className="flex items-center gap-2">
+            <EmailStatusBadge status={emailInfo.status} compact />
             {emailInfo.email ? (
               <>
                 <Icon.Mail size={14} className="text-gray-400 shrink-0" />
                 <a href={`mailto:${emailInfo.email}`} className="text-primary hover:underline truncate">
                   {emailInfo.email}
                 </a>
-                {emailInfo.source === 'pattern' && (
-                  <span className="text-[11px] text-gray-400">(suggéré)</span>
-                )}
               </>
             ) : (
               <span className="text-gray-400">Pas d&apos;email</span>
             )}
-            <button
-              onClick={startEdit}
-              className="text-gray-400 hover:text-primary shrink-0 cursor-pointer"
-              title="Modifier l'email"
-            >
-              <Icon.Edit size={14} />
-            </button>
+            {emailInfo.status === 'invalid' ? (
+              <button
+                onClick={startEdit}
+                className="text-red-500 hover:text-red-700 shrink-0 cursor-pointer text-[11px] font-medium"
+                title="Corriger l'email invalide"
+              >
+                Corriger
+              </button>
+            ) : (
+              <button
+                onClick={startEdit}
+                className="text-gray-400 hover:text-primary shrink-0 cursor-pointer"
+                title="Modifier l'email"
+              >
+                <Icon.Edit size={14} />
+              </button>
+            )}
           </div>
         )}
       </div>

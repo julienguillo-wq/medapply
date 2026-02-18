@@ -5,25 +5,48 @@ import Button from './Button';
 import { Icon } from './Icons';
 import EstablishmentCard from './EstablishmentCard';
 import ApplicationModal from './ApplicationModal';
-import { getEmail, saveManualEmail, cleanDirector } from '../services/siwfService';
+import { getEmail, cleanDirector } from '../services/siwfService';
+import { updateEstablishmentEmail } from '../services/emailValidationService';
+import { useAuth } from '../contexts/AuthContext';
+import EmailStatusBadge from './EmailStatusBadge';
 
 const PAGE_SIZE = 20;
 
 function EmailCell({ establishment }) {
+  const { user } = useAuth();
   const [editing, setEditing] = useState(false);
   const [emailInfo, setEmailInfo] = useState(() => getEmail(establishment));
   const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const startEdit = () => {
     setDraft(emailInfo.email || '');
     setEditing(true);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     const trimmed = draft.trim();
-    saveManualEmail(establishment.id, trimmed);
-    setEmailInfo(trimmed ? { email: trimmed, source: 'manual' } : getEmail(establishment));
-    setEditing(false);
+    setSaving(true);
+    try {
+      await updateEstablishmentEmail({
+        establishmentId: establishment.id,
+        email: trimmed,
+        userId: user?.id,
+      });
+      setEmailInfo(trimmed
+        ? { email: trimmed, source: 'manual', status: 'manually_verified', bounceCount: 0 }
+        : getEmail(establishment)
+      );
+    } catch {
+      // fallback: just update locally
+      setEmailInfo(trimmed
+        ? { email: trimmed, source: 'manual', status: 'manually_verified', bounceCount: 0 }
+        : getEmail(establishment)
+      );
+    } finally {
+      setSaving(false);
+      setEditing(false);
+    }
   };
 
   if (editing) {
@@ -40,11 +63,12 @@ function EmailCell({ establishment }) {
           className="w-full px-2 py-1 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:border-primary"
           placeholder="email@exemple.ch"
           autoFocus
+          disabled={saving}
         />
-        <button onClick={saveEdit} className="text-primary hover:text-primary-dark cursor-pointer">
+        <button onClick={saveEdit} className="text-primary hover:text-primary-dark cursor-pointer" disabled={saving}>
           <Icon.Check size={14} />
         </button>
-        <button onClick={() => setEditing(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+        <button onClick={() => setEditing(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer" disabled={saving}>
           <Icon.X size={14} />
         </button>
       </div>
@@ -53,25 +77,31 @@ function EmailCell({ establishment }) {
 
   return (
     <div className="flex items-center gap-1.5">
+      <EmailStatusBadge status={emailInfo.status} compact />
       {emailInfo.email ? (
-        <>
-          <a href={`mailto:${emailInfo.email}`} className="text-primary hover:underline text-xs break-all leading-tight">
-            {emailInfo.email}
-          </a>
-          {emailInfo.source === 'pattern' && (
-            <span className="text-[11px] text-gray-400 shrink-0">(suggéré)</span>
-          )}
-        </>
+        <a href={`mailto:${emailInfo.email}`} className="text-primary hover:underline text-xs break-all leading-tight">
+          {emailInfo.email}
+        </a>
       ) : (
         <span className="text-gray-400 text-[13px]">—</span>
       )}
-      <button
-        onClick={startEdit}
-        className="text-gray-400 hover:text-primary shrink-0 cursor-pointer"
-        title="Modifier l'email"
-      >
-        <Icon.Edit size={13} />
-      </button>
+      {emailInfo.status === 'invalid' ? (
+        <button
+          onClick={startEdit}
+          className="text-red-500 hover:text-red-700 shrink-0 cursor-pointer text-[11px] font-medium"
+          title="Corriger l'email invalide"
+        >
+          Corriger
+        </button>
+      ) : (
+        <button
+          onClick={startEdit}
+          className="text-gray-400 hover:text-primary shrink-0 cursor-pointer"
+          title="Modifier l'email"
+        >
+          <Icon.Edit size={13} />
+        </button>
+      )}
     </div>
   );
 }

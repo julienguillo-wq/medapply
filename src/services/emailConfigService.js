@@ -81,7 +81,7 @@ export async function testSmtpConnection(email, password) {
 /**
  * Envoie une candidature via le backend SMTP.
  */
-export async function sendApplication({ to, subject, body, userName, userId }) {
+export async function sendApplication({ to, subject, body, userName, userId, establishmentId }) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
     return { success: false, error: 'Non authentifié' };
@@ -94,7 +94,7 @@ export async function sendApplication({ to, subject, body, userName, userId }) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ to, subject, body, userName, userId }),
+      body: JSON.stringify({ to, subject, body, userName, userId, establishmentId }),
     });
 
     const result = await res.json();

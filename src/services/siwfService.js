@@ -3,6 +3,7 @@
  */
 
 import { findDomain } from '../data/hospitalDomains';
+import { getValidationData, updateEstablishmentEmail } from './emailValidationService';
 
 // Canton name mapping
 const CANTON_NAMES = {
@@ -181,11 +182,58 @@ export function cleanDirector(name) {
 }
 
 export function getEmail(establishment) {
-  const manual = getManualEmails()[String(establishment.id)];
-  if (manual) return { email: manual, source: 'manual' };
+  const id = String(establishment.id);
 
+  // 1. Check validation DB (email_manual is priority)
+  const validation = getValidationData(id);
+  if (validation) {
+    if (validation.email_manual) {
+      return {
+        email: validation.email_manual,
+        source: 'manual',
+        status: validation.email_status,
+        bounceCount: validation.bounce_count || 0,
+      };
+    }
+    if (validation.email_status === 'validated' || validation.email_status === 'invalid') {
+      const pattern = generateEmail(establishment.director, establishment.homepage, establishment.name);
+      return {
+        email: pattern,
+        source: 'pattern',
+        status: validation.email_status,
+        bounceCount: validation.bounce_count || 0,
+      };
+    }
+  }
+
+  // 2. Fallback localStorage (legacy)
+  const manual = getManualEmails()[id];
+  if (manual) return { email: manual, source: 'manual', status: 'manually_verified', bounceCount: 0 };
+
+  // 3. Fallback pattern generation
   const pattern = generateEmail(establishment.director, establishment.homepage, establishment.name);
-  if (pattern) return { email: pattern, source: 'pattern' };
+  if (pattern) return { email: pattern, source: 'pattern', status: 'suggested', bounceCount: 0 };
 
-  return { email: null, source: null };
+  return { email: null, source: null, status: 'suggested', bounceCount: 0 };
+}
+
+/**
+ * Migrate localStorage manual emails to Supabase backend.
+ * Called once after initial load if user is authenticated.
+ */
+export async function migrateLocalStorageEmails(userId) {
+  const emails = getManualEmails();
+  const entries = Object.entries(emails);
+  if (entries.length === 0) return;
+
+  let migrated = 0;
+  for (const [establishmentId, email] of entries) {
+    const result = await updateEstablishmentEmail({ establishmentId, email, userId });
+    if (result.success) migrated++;
+  }
+
+  if (migrated > 0) {
+    localStorage.removeItem(EMAILS_STORAGE_KEY);
+    console.log(`[siwfService] Migrated ${migrated} manual emails to backend`);
+  }
 }
