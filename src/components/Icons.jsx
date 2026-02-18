@@ -216,4 +216,50 @@ export const Icon = {
       <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="8" y1="12" x2="16" y2="12" />
     </svg>
   ),
+  Plane: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+    </svg>
+  ),
+  Home: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  ),
+  Stethoscope: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <path d="M4.8 2.655A.5.5 0 0 1 5.5 2H6a2 2 0 0 1 2 2v7.5a5.5 5.5 0 1 1-11 0V4a2 2 0 0 1 2-2h.5a.5.5 0 0 1 .5.5v0a.5.5 0 0 1-.5.5H5a1 1 0 0 0-1 1v7.5a4.5 4.5 0 1 0 9 0V4a1 1 0 0 0-1-1h-.5a.5.5 0 0 1-.5-.5v0a.5.5 0 0 1 .5-.5" transform="translate(3 0)" />
+      <circle cx="18" cy="18" r="3" /><path d="M18 15v-2a4 4 0 0 0-4-4" />
+    </svg>
+  ),
+  Lock: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  ),
+  Info: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+    </svg>
+  ),
+  CreditCard: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" />
+    </svg>
+  ),
+  Key: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+    </svg>
+  ),
+  MessageCircle: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+  ),
+  ChevronRight: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  ),
 };

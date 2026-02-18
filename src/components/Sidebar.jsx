@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { Icon } from './Icons';
 import UserMenu from './UserMenu';
 
@@ -14,6 +14,8 @@ const navItems = [
 ];
 
 export default function Sidebar({ open, onClose }) {
+  const navigate = useNavigate();
+
   return (
     <>
       {/* Backdrop (mobile only) */}
@@ -46,6 +48,15 @@ export default function Sidebar({ open, onClose }) {
             <Icon.X size={20} />
           </button>
         </div>
+
+        {/* Mode switch */}
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 px-4 py-2.5 mb-4 mx-3 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
+        >
+          <Icon.ChevronRight size={14} className="rotate-180" />
+          Changer de mode
+        </button>
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto">
