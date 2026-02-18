@@ -20,6 +20,9 @@ export default function SearchPage() {
     filtered,
     totalCount,
     emailStats,
+    sortBy,
+    setSortBy,
+    hasProfile,
   } = useSiwfData();
 
   if (error) {
@@ -161,6 +164,29 @@ export default function SearchPage() {
       {/* Establishment list */}
       {!loading && showingFiltered && (
         <div className="mt-7">
+          {/* Sort + Email stats bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            {hasProfile && (
+              <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-0.5">
+                <button
+                  onClick={() => setSortBy('score')}
+                  className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors cursor-pointer ${
+                    sortBy === 'score' ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Par compatibilité
+                </button>
+                <button
+                  onClick={() => setSortBy('name')}
+                  className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors cursor-pointer ${
+                    sortBy === 'name' ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Par nom
+                </button>
+              </div>
+            )}
+          </div>
           {/* Email validation stats */}
           {emailStats && (
             <div className="flex flex-wrap items-center gap-4 mb-4 text-[13px] text-gray-500">

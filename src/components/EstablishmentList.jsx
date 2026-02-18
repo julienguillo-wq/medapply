@@ -9,6 +9,7 @@ import { getEmail, cleanDirector } from '../services/siwfService';
 import { updateEstablishmentEmail } from '../services/emailValidationService';
 import { useAuth } from '../contexts/AuthContext';
 import EmailStatusBadge from './EmailStatusBadge';
+import CompatibilityBadge from './CompatibilityBadge';
 
 const PAGE_SIZE = 20;
 
@@ -157,9 +158,12 @@ export default function EstablishmentList({ establishments }) {
               i < visible.length - 1 ? 'border-b border-gray-100' : ''
             }`}
           >
-            <div className="min-w-0">
-              <div className="font-semibold truncate">{est.name}</div>
-              <div className="text-[13px] text-gray-400">{est.city}{est.canton ? ` (${est.canton})` : ''}</div>
+            <div className="min-w-0 flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold truncate">{est.name}</div>
+                <div className="text-[13px] text-gray-400">{est.city}{est.canton ? ` (${est.canton})` : ''}</div>
+              </div>
+              {est._score != null && <CompatibilityBadge score={est._score} compact />}
             </div>
             <div className="text-gray-600 text-[13px] truncate">{est.specialty || '—'}</div>
             <div>

@@ -6,6 +6,7 @@ import { getEmail } from '../services/siwfService';
 import { updateEstablishmentEmail } from '../services/emailValidationService';
 import { useAuth } from '../contexts/AuthContext';
 import EmailStatusBadge from './EmailStatusBadge';
+import CompatibilityBadge from './CompatibilityBadge';
 
 export default function EstablishmentCard({ establishment, onApply }) {
   const { user } = useAuth();
@@ -51,9 +52,12 @@ export default function EstablishmentCard({ establishment, onApply }) {
   return (
     <div className="p-4 border border-gray-100 rounded-xl bg-white">
       <div className="flex justify-between items-start mb-2">
-        <div className="min-w-0 flex-1">
-          <div className="font-semibold text-sm truncate">{name}</div>
-          <div className="text-[13px] text-gray-400">{city}{canton ? ` (${canton})` : ''}</div>
+        <div className="min-w-0 flex-1 flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold text-sm truncate">{name}</div>
+            <div className="text-[13px] text-gray-400">{city}{canton ? ` (${canton})` : ''}</div>
+          </div>
+          {establishment._score != null && <CompatibilityBadge score={establishment._score} compact />}
         </div>
         <a
           href={siwfUrl}

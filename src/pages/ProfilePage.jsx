@@ -5,6 +5,22 @@ import { Icon } from '../components/Icons';
 import { useAuth } from '../contexts/AuthContext';
 import { getEmailConfig, saveEmailConfig, testSmtpConnection } from '../services/emailConfigService';
 
+const SWISS_CANTONS = [
+  { code: 'AG', name: 'Argovie' }, { code: 'AI', name: 'Appenzell RI' },
+  { code: 'AR', name: 'Appenzell RE' }, { code: 'BE', name: 'Berne' },
+  { code: 'BL', name: 'Bâle-Campagne' }, { code: 'BS', name: 'Bâle-Ville' },
+  { code: 'FR', name: 'Fribourg' }, { code: 'GE', name: 'Genève' },
+  { code: 'GL', name: 'Glaris' }, { code: 'GR', name: 'Grisons' },
+  { code: 'JU', name: 'Jura' }, { code: 'LU', name: 'Lucerne' },
+  { code: 'NE', name: 'Neuchâtel' }, { code: 'NW', name: 'Nidwald' },
+  { code: 'OW', name: 'Obwald' }, { code: 'SG', name: 'Saint-Gall' },
+  { code: 'SH', name: 'Schaffhouse' }, { code: 'SO', name: 'Soleure' },
+  { code: 'SZ', name: 'Schwytz' }, { code: 'TG', name: 'Thurgovie' },
+  { code: 'TI', name: 'Tessin' }, { code: 'UR', name: 'Uri' },
+  { code: 'VD', name: 'Vaud' }, { code: 'VS', name: 'Valais' },
+  { code: 'ZG', name: 'Zoug' }, { code: 'ZH', name: 'Zurich' },
+];
+
 const allQuestions = [
   { key: 'name', q: "Quel est votre nom complet ?" },
   { key: 'email', q: "Votre email professionnel ?" },
@@ -123,6 +139,36 @@ export default function ProfilePage() {
   const [remainingQuestions, setRemainingQuestions] = useState([]);
   const [initialized, setInitialized] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // Canton preferences state
+  const [preferredCantons, setPreferredCantons] = useState([]);
+  const [cantonsSaving, setCantonsSaving] = useState(false);
+  const [cantonsMessage, setCantonsMessage] = useState(null);
+
+  // Load preferred cantons from profile
+  useEffect(() => {
+    if (authProfile?.preferred_cantons) {
+      setPreferredCantons(authProfile.preferred_cantons);
+    }
+  }, [authProfile]);
+
+  const toggleCanton = (code) => {
+    setPreferredCantons(prev =>
+      prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
+    );
+  };
+
+  const saveCantons = async () => {
+    setCantonsSaving(true);
+    setCantonsMessage(null);
+    const { error } = await updateProfile({ preferred_cantons: preferredCantons });
+    if (error) {
+      setCantonsMessage({ type: 'error', text: 'Erreur lors de la sauvegarde.' });
+    } else {
+      setCantonsMessage({ type: 'success', text: 'Cantons préférés sauvegardés.' });
+    }
+    setCantonsSaving(false);
+  };
 
   // Email SMTP config state
   const [smtpEmail, setSmtpEmail] = useState('');
@@ -427,6 +473,67 @@ export default function ProfilePage() {
               className="flex-1"
             >
               {smtpLoading ? 'Sauvegarde...' : 'Sauvegarder'}
+            </Button>
+          </div>
+        </Card>
+      </div>
+
+      {/* Canton Preferences */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold tracking-tight mb-2">Cantons préférés</h2>
+        <p className="text-gray-500 text-[15px] mb-5">
+          Sélectionnez les cantons où vous souhaitez postuler pour améliorer votre score de compatibilité.
+        </p>
+
+        <Card>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {SWISS_CANTONS.map(({ code, name }) => {
+              const selected = preferredCantons.includes(code);
+              return (
+                <button
+                  key={code}
+                  onClick={() => toggleCanton(code)}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-[13px] font-medium text-left transition-all cursor-pointer ${
+                    selected
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
+                    selected ? 'border-white bg-white/20' : 'border-gray-300'
+                  }`}>
+                    {selected && <Icon.Check size={10} />}
+                  </span>
+                  <span className="truncate">{code} — {name}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {preferredCantons.length > 0 && (
+            <div className="mt-4 text-[13px] text-gray-500">
+              {preferredCantons.length} canton{preferredCantons.length > 1 ? 's' : ''} sélectionné{preferredCantons.length > 1 ? 's' : ''}
+            </div>
+          )}
+
+          {cantonsMessage && (
+            <div className={`mt-4 p-3 rounded-xl text-sm flex items-center gap-2 ${
+              cantonsMessage.type === 'success'
+                ? 'bg-green-50 text-green-700 border border-green-100'
+                : 'bg-red-50 text-red-700 border border-red-100'
+            }`}>
+              {cantonsMessage.type === 'success' ? <Icon.Check size={16} /> : <Icon.X size={16} />}
+              {cantonsMessage.text}
+            </div>
+          )}
+
+          <div className="mt-5">
+            <Button
+              onClick={saveCantons}
+              disabled={cantonsSaving}
+              icon={<Icon.Save size={16} />}
+            >
+              {cantonsSaving ? 'Sauvegarde...' : 'Sauvegarder les cantons'}
             </Button>
           </div>
         </Card>

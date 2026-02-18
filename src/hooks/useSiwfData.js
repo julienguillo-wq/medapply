@@ -8,10 +8,12 @@ import {
   migrateLocalStorageEmails,
 } from '../services/siwfService';
 import { loadEmailValidationData } from '../services/emailValidationService';
+import { loadParcoursFromSupabase } from '../services/parcoursService';
+import { calculateScore } from '../services/compatibilityService';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function useSiwfData() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [allEstablishments, setAllEstablishments] = useState([]);
   const [allSpecialties, setAllSpecialties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +23,10 @@ export default function useSiwfData() {
   const [selectedSpecialties, setSelectedSpecialties] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [sortBy, setSortBy] = useState('score'); // 'score' | 'name'
+
+  // Parcours stages for experience calculation
+  const [parcoursStages, setParcoursStages] = useState([]);
 
   // Debounce search query
   const timerRef = useRef(null);
@@ -55,6 +61,18 @@ export default function useSiwfData() {
     return () => { cancelled = true; };
   }, []);
 
+  // Load parcours stages when user is available
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    loadParcoursFromSupabase(user.id).then(data => {
+      if (!cancelled && data?.stages) {
+        setParcoursStages(data.stages);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
   const toggleCanton = useCallback((id) => {
     setSelectedCantons(prev =>
       prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
@@ -82,15 +100,29 @@ export default function useSiwfData() {
     }
   }, [loading, user?.id]);
 
-  // Filtered establishments
-  const filtered = useMemo(
-    () => filterEstablishments(allEstablishments, {
+  // Filtered establishments with scores
+  const filtered = useMemo(() => {
+    let results = filterEstablishments(allEstablishments, {
       cantons: selectedCantons,
       specialties: selectedSpecialties,
       query: debouncedQuery,
-    }),
-    [allEstablishments, selectedCantons, selectedSpecialties, debouncedQuery]
-  );
+    });
+
+    // Calculate scores if profile is available
+    if (profile) {
+      results = results.map(est => ({
+        ...est,
+        _score: calculateScore(est, profile, parcoursStages),
+      }));
+
+      // Sort by score descending if requested
+      if (sortBy === 'score') {
+        results.sort((a, b) => (b._score ?? -1) - (a._score ?? -1));
+      }
+    }
+
+    return results;
+  }, [allEstablishments, selectedCantons, selectedSpecialties, debouncedQuery, profile, parcoursStages, sortBy]);
 
   // Email validation stats for filtered results
   const emailStats = useMemo(() => {
@@ -103,6 +135,8 @@ export default function useSiwfData() {
     }
     return stats;
   }, [filtered]);
+
+  const hasProfile = !!profile?.specialty;
 
   return {
     loading,
@@ -118,5 +152,8 @@ export default function useSiwfData() {
     filtered,
     totalCount: allEstablishments.length,
     emailStats,
+    sortBy,
+    setSortBy,
+    hasProfile,
   };
 }
