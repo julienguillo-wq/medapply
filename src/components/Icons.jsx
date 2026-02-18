@@ -186,4 +186,34 @@ export const Icon = {
       <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
   ),
+  Layers: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" />
+    </svg>
+  ),
+  Pause: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />
+    </svg>
+  ),
+  Play: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <polygon points="5 3 19 12 5 21 5 3" />
+    </svg>
+  ),
+  CheckSquare: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+    </svg>
+  ),
+  Square: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+    </svg>
+  ),
+  MinusSquare: ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...s}>
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="8" y1="12" x2="16" y2="12" />
+    </svg>
+  ),
 };

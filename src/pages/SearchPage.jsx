@@ -1,8 +1,11 @@
+import { useState, useCallback } from 'react';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
+import Button from '../components/Button';
 import { Icon } from '../components/Icons';
 import SwitzerlandMap from '../components/SwitzerlandMap';
 import EstablishmentList from '../components/EstablishmentList';
+import CampaignModal from '../components/CampaignModal';
 import useSiwfData from '../hooks/useSiwfData';
 
 export default function SearchPage() {
@@ -24,6 +27,36 @@ export default function SearchPage() {
     setSortBy,
     hasProfile,
   } = useSiwfData();
+
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+
+  const toggleSelect = useCallback((id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(filtered.map(e => e.id)));
+  }, [filtered]);
+
+  const deselectAll = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  const toggleSelectionMode = () => {
+    if (selectionMode) {
+      setSelectedIds(new Set());
+    }
+    setSelectionMode(!selectionMode);
+  };
+
+  const selectedEstablishments = filtered.filter(e => selectedIds.has(e.id));
 
   if (error) {
     return (
@@ -164,29 +197,42 @@ export default function SearchPage() {
       {/* Establishment list */}
       {!loading && showingFiltered && (
         <div className="mt-7">
-          {/* Sort + Email stats bar */}
+          {/* Sort + Email stats + Selection mode bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            {hasProfile && (
-              <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-0.5">
-                <button
-                  onClick={() => setSortBy('score')}
-                  className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors cursor-pointer ${
-                    sortBy === 'score' ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Par compatibilité
-                </button>
-                <button
-                  onClick={() => setSortBy('name')}
-                  className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors cursor-pointer ${
-                    sortBy === 'name' ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Par nom
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {hasProfile && (
+                <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setSortBy('score')}
+                    className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors cursor-pointer ${
+                      sortBy === 'score' ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Par compatibilité
+                  </button>
+                  <button
+                    onClick={() => setSortBy('name')}
+                    className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors cursor-pointer ${
+                      sortBy === 'name' ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Par nom
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant={selectionMode ? 'primary' : 'secondary'}
+                size="small"
+                onClick={toggleSelectionMode}
+                icon={selectionMode ? <Icon.X size={15} /> : <Icon.CheckSquare size={15} />}
+              >
+                {selectionMode ? 'Annuler sélection' : 'Sélection multiple'}
+              </Button>
+            </div>
           </div>
+
           {/* Email validation stats */}
           {emailStats && (
             <div className="flex flex-wrap items-center gap-4 mb-4 text-[13px] text-gray-500">
@@ -209,7 +255,31 @@ export default function SearchPage() {
               </span>
             </div>
           )}
-          <EstablishmentList establishments={filtered} />
+
+          {/* Campaign action bar */}
+          {selectionMode && selectedIds.size > 0 && (
+            <div className="flex items-center justify-between p-4 mb-4 bg-primary/5 border border-primary/20 rounded-xl">
+              <span className="text-sm font-medium text-primary">
+                {selectedIds.size} établissement{selectedIds.size > 1 ? 's' : ''} sélectionné{selectedIds.size > 1 ? 's' : ''}
+              </span>
+              <Button
+                size="small"
+                onClick={() => setShowCampaignModal(true)}
+                icon={<Icon.Layers size={16} />}
+              >
+                Lancer une campagne
+              </Button>
+            </div>
+          )}
+
+          <EstablishmentList
+            establishments={filtered}
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onSelectAll={selectAll}
+            onDeselectAll={deselectAll}
+          />
         </div>
       )}
 
@@ -218,6 +288,19 @@ export default function SearchPage() {
         <div className="mt-8 text-center text-[12px] text-gray-400">
           Source : Registre ISFM (register.siwf.ch) — {totalCount} établissements
         </div>
+      )}
+
+      {/* Campaign Modal */}
+      {showCampaignModal && (
+        <CampaignModal
+          establishments={selectedEstablishments}
+          onClose={() => setShowCampaignModal(false)}
+          onCreated={() => {
+            setShowCampaignModal(false);
+            setSelectionMode(false);
+            setSelectedIds(new Set());
+          }}
+        />
       )}
     </div>
   );

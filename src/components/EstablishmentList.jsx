@@ -39,7 +39,6 @@ function EmailCell({ establishment }) {
         : getEmail(establishment)
       );
     } catch {
-      // fallback: just update locally
       setEmailInfo(trimmed
         ? { email: trimmed, source: 'manual', status: 'manually_verified', bounceCount: 0 }
         : getEmail(establishment)
@@ -109,7 +108,7 @@ function EmailCell({ establishment }) {
   );
 }
 
-export default function EstablishmentList({ establishments }) {
+export default function EstablishmentList({ establishments, selectionMode = false, selectedIds, onToggleSelect, onSelectAll, onDeselectAll }) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [applyTarget, setApplyTarget] = useState(null);
 
@@ -127,6 +126,8 @@ export default function EstablishmentList({ establishments }) {
   }
 
   const hasScores = establishments.length > 0 && establishments[0]._score != null;
+  const allVisibleSelected = selectionMode && visible.every(e => selectedIds?.has(e.id));
+  const someSelected = selectionMode && selectedIds?.size > 0;
 
   const siwfUrl = (id) =>
     `https://register.siwf.ch/SiwfRegister/Detail/${id}?suchDatum=${new Date().toISOString().split('T')[0]}`;
@@ -140,11 +141,31 @@ export default function EstablishmentList({ establishments }) {
             {establishments.length} établissement{establishments.length > 1 ? 's' : ''} trouvé{establishments.length > 1 ? 's' : ''}
           </span>
         </div>
+        {selectionMode && (
+          <div className="flex items-center gap-3">
+            {someSelected && (
+              <span className="text-sm font-medium text-primary">
+                {selectedIds.size} sélectionné{selectedIds.size > 1 ? 's' : ''}
+              </span>
+            )}
+            <button
+              onClick={allVisibleSelected ? onDeselectAll : onSelectAll}
+              className="text-[13px] font-medium text-gray-600 hover:text-primary cursor-pointer flex items-center gap-1.5"
+            >
+              {allVisibleSelected ? (
+                <><Icon.MinusSquare size={16} /> Tout désélectionner</>
+              ) : (
+                <><Icon.CheckSquare size={16} /> Tout sélectionner</>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Desktop table */}
       <Card className="!p-0 hidden md:block">
-        <div className={`grid ${hasScores ? 'grid-cols-[2fr_64px_1.5fr_0.8fr_1.2fr_1.5fr_70px_48px]' : 'grid-cols-[2fr_1.5fr_0.8fr_1.5fr_1.5fr_80px_60px]'} px-6 py-[18px] border-b border-gray-100 text-[11px] text-gray-400 uppercase tracking-wider font-semibold`}>
+        <div className={`grid ${selectionMode ? (hasScores ? 'grid-cols-[36px_2fr_64px_1.5fr_0.8fr_1.2fr_1.5fr_70px_48px]' : 'grid-cols-[36px_2fr_1.5fr_0.8fr_1.5fr_1.5fr_80px_60px]') : (hasScores ? 'grid-cols-[2fr_64px_1.5fr_0.8fr_1.2fr_1.5fr_70px_48px]' : 'grid-cols-[2fr_1.5fr_0.8fr_1.5fr_1.5fr_80px_60px]')} px-6 py-[18px] border-b border-gray-100 text-[11px] text-gray-400 uppercase tracking-wider font-semibold`}>
+          {selectionMode && <div></div>}
           <div>Établissement</div>
           {hasScores && <div className="text-center">Match</div>}
           <div>Spécialité</div>
@@ -154,66 +175,97 @@ export default function EstablishmentList({ establishments }) {
           <div></div>
           <div></div>
         </div>
-        {visible.map((est, i) => (
-          <div
-            key={est.id}
-            className={`grid ${hasScores ? 'grid-cols-[2fr_64px_1.5fr_0.8fr_1.2fr_1.5fr_70px_48px]' : 'grid-cols-[2fr_1.5fr_0.8fr_1.5fr_1.5fr_80px_60px]'} px-6 py-[18px] items-center text-sm transition-colors hover:bg-gray-50 ${
-              i < visible.length - 1 ? 'border-b border-gray-100' : ''
-            }`}
-          >
-            <div className="min-w-0">
-              <div className="font-semibold truncate">{est.name}</div>
-              <div className="text-[13px] text-gray-400">{est.city}{est.canton ? ` (${est.canton})` : ''}</div>
-            </div>
-            {hasScores && (
-              <div className="flex justify-center">
-                {est._score != null ? <CompatibilityBadge score={est._score} /> : <span className="text-gray-300 text-[11px]">—</span>}
-              </div>
-            )}
-            <div className="text-gray-600 text-[13px] truncate">{est.specialty || '—'}</div>
-            <div>
-              {est.category ? (
-                <Badge>{est.category}</Badge>
-              ) : (
-                <span className="text-gray-400 text-[13px]">—</span>
+        {visible.map((est, i) => {
+          const isSelected = selectionMode && selectedIds?.has(est.id);
+          return (
+            <div
+              key={est.id}
+              className={`grid ${selectionMode ? (hasScores ? 'grid-cols-[36px_2fr_64px_1.5fr_0.8fr_1.2fr_1.5fr_70px_48px]' : 'grid-cols-[36px_2fr_1.5fr_0.8fr_1.5fr_1.5fr_80px_60px]') : (hasScores ? 'grid-cols-[2fr_64px_1.5fr_0.8fr_1.2fr_1.5fr_70px_48px]' : 'grid-cols-[2fr_1.5fr_0.8fr_1.5fr_1.5fr_80px_60px]')} px-6 py-[18px] items-center text-sm transition-colors ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'} ${
+                i < visible.length - 1 ? 'border-b border-gray-100' : ''
+              }`}
+            >
+              {selectionMode && (
+                <div>
+                  <button
+                    onClick={() => onToggleSelect(est.id)}
+                    className="cursor-pointer text-gray-400 hover:text-primary"
+                  >
+                    {isSelected ? (
+                      <Icon.CheckSquare size={18} className="text-primary" />
+                    ) : (
+                      <Icon.Square size={18} />
+                    )}
+                  </button>
+                </div>
               )}
+              <div className="min-w-0">
+                <div className="font-semibold truncate">{est.name}</div>
+                <div className="text-[13px] text-gray-400">{est.city}{est.canton ? ` (${est.canton})` : ''}</div>
+              </div>
+              {hasScores && (
+                <div className="flex justify-center">
+                  {est._score != null ? <CompatibilityBadge score={est._score} /> : <span className="text-gray-300 text-[11px]">—</span>}
+                </div>
+              )}
+              <div className="text-gray-600 text-[13px] truncate">{est.specialty || '—'}</div>
+              <div>
+                {est.category ? (
+                  <Badge>{est.category}</Badge>
+                ) : (
+                  <span className="text-gray-400 text-[13px]">—</span>
+                )}
+              </div>
+              <div className="text-gray-600 text-[13px]">{cleanDirector(est.director)}</div>
+              <div className="min-w-0">
+                <EmailCell establishment={est} />
+              </div>
+              <div className="text-center">
+                <button
+                  onClick={() => setApplyTarget(est)}
+                  className="text-primary hover:underline text-[13px] font-medium cursor-pointer"
+                >
+                  Postuler
+                </button>
+              </div>
+              <div className="text-right">
+                <a
+                  href={siwfUrl(est.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-primary inline-flex"
+                  title="Fiche SIWF"
+                >
+                  <Icon.ExternalLink size={16} />
+                </a>
+              </div>
             </div>
-            <div className="text-gray-600 text-[13px]">{cleanDirector(est.director)}</div>
-            <div className="min-w-0">
-              <EmailCell establishment={est} />
-            </div>
-            <div className="text-center">
-              <button
-                onClick={() => setApplyTarget(est)}
-                className="text-primary hover:underline text-[13px] font-medium cursor-pointer"
-              >
-                Postuler
-              </button>
-            </div>
-            <div className="text-right">
-              <a
-                href={siwfUrl(est.id)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-primary inline-flex"
-                title="Fiche SIWF"
-              >
-                <Icon.ExternalLink size={16} />
-              </a>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </Card>
 
       {/* Mobile cards */}
       <div className="flex flex-col gap-3 md:hidden">
-        {visible.map((est) => (
-          <EstablishmentCard
-            key={est.id}
-            establishment={est}
-            onApply={() => setApplyTarget(est)}
-          />
-        ))}
+        {visible.map((est) => {
+          const isSelected = selectionMode && selectedIds?.has(est.id);
+          return (
+            <div key={est.id} className="relative">
+              {selectionMode && (
+                <button
+                  onClick={() => onToggleSelect(est.id)}
+                  className={`absolute top-3 left-3 z-10 cursor-pointer ${isSelected ? 'text-primary' : 'text-gray-400'}`}
+                >
+                  {isSelected ? <Icon.CheckSquare size={20} /> : <Icon.Square size={20} />}
+                </button>
+              )}
+              <div className={selectionMode ? 'pl-8' : ''}>
+                <EstablishmentCard
+                  establishment={est}
+                  onApply={() => setApplyTarget(est)}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Load more */}

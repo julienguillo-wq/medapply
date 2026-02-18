@@ -8,6 +8,7 @@ import ParcoursPage from './pages/ParcoursPage';
 import DocumentsPage from './pages/DocumentsPage';
 import SearchPage from './pages/SearchPage';
 import ApplicationsPage from './pages/ApplicationsPage';
+import CampaignsPage from './pages/CampaignsPage';
 import DashboardPage from './pages/DashboardPage';
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
               <Route path="/documents" element={<DocumentsPage />} />
               <Route path="/recherche" element={<SearchPage />} />
               <Route path="/candidatures" element={<ApplicationsPage />} />
+              <Route path="/campagnes" element={<CampaignsPage />} />
               <Route path="/tableau-de-bord" element={<DashboardPage />} />
             </Route>
           </Routes>
