@@ -19,7 +19,7 @@ const modes = [
   {
     id: 'installation',
     title: "S'installer en Suisse",
-    subtitle: 'Je suis medecin etranger et je veux exercer en Suisse',
+    subtitle: 'Je suis médecin étranger et je veux exercer en Suisse',
     IconComp: Icon.Plane,
     gradient: 'from-install to-install-dark',
     shadow: 'rgba(13,148,136,0.25)',

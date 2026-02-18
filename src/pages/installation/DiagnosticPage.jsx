@@ -6,52 +6,52 @@ import { Icon } from '../../components/Icons';
 
 const NATIONALITIES = [
   'Allemagne', 'Autriche', 'Belgique', 'Bulgarie', 'Chypre', 'Croatie', 'Danemark',
-  'Espagne', 'Estonie', 'Finlande', 'France', 'Grece', 'Hongrie', 'Irlande',
+  'Espagne', 'Estonie', 'Finlande', 'France', 'Grèce', 'Hongrie', 'Irlande',
   'Italie', 'Lettonie', 'Lituanie', 'Luxembourg', 'Malte', 'Pays-Bas', 'Pologne',
-  'Portugal', 'Republique tcheque', 'Roumanie', 'Slovaquie', 'Slovenie', 'Suede',
-  'Islande', 'Liechtenstein', 'Norvege',
+  'Portugal', 'République tchèque', 'Roumanie', 'Slovaquie', 'Slovénie', 'Suède',
+  'Islande', 'Liechtenstein', 'Norvège',
   '---',
-  'Afghanistan', 'Algerie', 'Argentine', 'Australie', 'Bresil', 'Cameroun', 'Canada',
-  'Chine', 'Colombie', 'Egypte', 'Etats-Unis', 'Inde', 'Irak', 'Iran', 'Israel',
-  'Japon', 'Liban', 'Libye', 'Maroc', 'Mexique', 'Nigeria', 'Pakistan', 'Perou',
-  'Russie', 'Senegal', 'Syrie', 'Tunisie', 'Turquie', 'Ukraine', 'Vietnam',
+  'Afghanistan', 'Algérie', 'Argentine', 'Australie', 'Brésil', 'Cameroun', 'Canada',
+  'Chine', 'Colombie', 'Égypte', 'États-Unis', 'Inde', 'Irak', 'Iran', 'Israël',
+  'Japon', 'Liban', 'Libye', 'Maroc', 'Mexique', 'Nigeria', 'Pakistan', 'Pérou',
+  'Russie', 'Sénégal', 'Syrie', 'Tunisie', 'Turquie', 'Ukraine', 'Vietnam',
   'Autre',
 ];
 
 const SPECIALTIES = [
-  'Allergologie et immunologie clinique', 'Anesthesiologie', 'Angiologie',
+  'Allergologie et immunologie clinique', 'Anesthésiologie', 'Angiologie',
   'Cardiologie', 'Chirurgie', 'Chirurgie cardiaque et vasculaire thoracique',
-  'Chirurgie orale et maxillo-faciale', 'Chirurgie orthopedique et traumatologie',
-  'Chirurgie pediatrique', 'Chirurgie plastique, reconstructive et esthetique',
-  'Dermatologie et venereologie', 'Endocrinologie-diabetologie',
-  'Gastroenterologie', 'Genetique medicale', 'Geriatrie', 'Gynecologie et obstetrique',
-  'Hematologie', 'Infectiologie', 'Medecine du travail', 'Medecine generale',
-  'Medecine intensive', 'Medecine interne generale', 'Medecine legale',
-  'Medecine nucleaire', 'Medecine pharmaceutique', 'Medecine physique et readaptation',
-  'Medecine tropicale et medecine des voyages', 'Nephrologie', 'Neurochirurgie',
-  'Neurologie', 'Neuropathologie', 'Oncologie medicale',
+  'Chirurgie orale et maxillo-faciale', 'Chirurgie orthopédique et traumatologie',
+  'Chirurgie pédiatrique', 'Chirurgie plastique, reconstructive et esthétique',
+  'Dermatologie et vénéréologie', 'Endocrinologie-diabétologie',
+  'Gastroentérologie', 'Génétique médicale', 'Gériatrie', 'Gynécologie et obstétrique',
+  'Hématologie', 'Infectiologie', 'Médecine du travail', 'Médecine générale',
+  'Médecine intensive', 'Médecine interne générale', 'Médecine légale',
+  'Médecine nucléaire', 'Médecine pharmaceutique', 'Médecine physique et réadaptation',
+  'Médecine tropicale et médecine des voyages', 'Néphrologie', 'Neurochirurgie',
+  'Neurologie', 'Neuropathologie', 'Oncologie médicale',
   'Ophtalmologie', 'Oto-rhino-laryngologie', 'Pathologie',
-  'Pediatrie', 'Pharmacologie et toxicologie cliniques', 'Pneumologie',
-  'Psychiatrie et psychotherapie', 'Psychiatrie et psychotherapie d\'enfants et d\'adolescents',
-  'Radiologie', 'Radio-oncologie / radiotherapie', 'Rhumatologie',
+  'Pédiatrie', 'Pharmacologie et toxicologie cliniques', 'Pneumologie',
+  'Psychiatrie et psychothérapie', 'Psychiatrie et psychothérapie d\'enfants et d\'adolescents',
+  'Radiologie', 'Radio-oncologie / radiothérapie', 'Rhumatologie',
   'Urologie',
-  'Pas encore de specialite',
+  'Pas encore de spécialité',
 ];
 
 const EU_COUNTRIES = [
   'Allemagne', 'Autriche', 'Belgique', 'Bulgarie', 'Chypre', 'Croatie', 'Danemark',
-  'Espagne', 'Estonie', 'Finlande', 'France', 'Grece', 'Hongrie', 'Irlande',
+  'Espagne', 'Estonie', 'Finlande', 'France', 'Grèce', 'Hongrie', 'Irlande',
   'Italie', 'Lettonie', 'Lituanie', 'Luxembourg', 'Malte', 'Pays-Bas', 'Pologne',
-  'Portugal', 'Republique tcheque', 'Roumanie', 'Slovaquie', 'Slovenie', 'Suede',
-  'Islande', 'Liechtenstein', 'Norvege',
+  'Portugal', 'République tchèque', 'Roumanie', 'Slovaquie', 'Slovénie', 'Suède',
+  'Islande', 'Liechtenstein', 'Norvège',
 ];
 
 const QUESTIONS = [
-  { key: 'nationality', label: 'Quelle est votre nationalite ?', type: 'select', options: NATIONALITIES },
-  { key: 'diplomaCountry', label: 'Dans quel pays avez-vous obtenu votre diplome de medecine ?', type: 'select', options: NATIONALITIES },
-  { key: 'diplomaYear', label: 'Annee d\'obtention du diplome', type: 'select', options: Array.from({ length: 30 }, (_, i) => String(2025 - i)) },
-  { key: 'specialty', label: 'Quelle est votre specialite (ou specialite visee) ?', type: 'select', options: SPECIALTIES },
-  { key: 'hasSpecialistTitle', label: 'Avez-vous un titre de specialiste ?', type: 'choice', options: [{ value: true, label: 'Oui' }, { value: false, label: 'Non' }] },
+  { key: 'nationality', label: 'Quelle est votre nationalité ?', type: 'select', options: NATIONALITIES },
+  { key: 'diplomaCountry', label: 'Dans quel pays avez-vous obtenu votre diplôme de médecine ?', type: 'select', options: NATIONALITIES },
+  { key: 'diplomaYear', label: 'Année d\'obtention du diplôme', type: 'select', options: Array.from({ length: 30 }, (_, i) => String(2025 - i)) },
+  { key: 'specialty', label: 'Quelle est votre spécialité (ou spécialité visée) ?', type: 'select', options: SPECIALTIES },
+  { key: 'hasSpecialistTitle', label: 'Avez-vous un titre de spécialiste ?', type: 'choice', options: [{ value: true, label: 'Oui' }, { value: false, label: 'Non' }] },
 ];
 
 function generateResult(data) {
@@ -60,21 +60,21 @@ function generateResult(data) {
 
   const procedure = isEU && isDiplomaEU
     ? 'Reconnaissance directe (voie UE/AELE)'
-    : 'Examen federal de medecine humaine (voie hors-UE)';
+    : 'Examen fédéral de médecine humaine (voie hors-UE)';
 
   const delay = isEU && isDiplomaEU ? '3-4 mois' : '6-12 mois';
   const cost = isEU && isDiplomaEU ? '800 CHF' : '1\'500-5\'000 CHF';
 
   const docs = [
-    'Diplome de medecine (copie certifiee conforme)',
-    !['France', 'Allemagne', 'Italie', 'Autriche'].includes(data.diplomaCountry) && 'Traduction certifiee du diplome',
-    data.hasSpecialistTitle && 'Titre de specialiste (copie certifiee conforme)',
-    data.hasSpecialistTitle && !['France', 'Allemagne', 'Italie', 'Autriche'].includes(data.diplomaCountry) && 'Traduction du titre de specialiste',
+    'Diplôme de médecine (copie certifiée conforme)',
+    !['France', 'Allemagne', 'Italie', 'Autriche'].includes(data.diplomaCountry) && 'Traduction certifiée du diplôme',
+    data.hasSpecialistTitle && 'Titre de spécialiste (copie certifiée conforme)',
+    data.hasSpecialistTitle && !['France', 'Allemagne', 'Italie', 'Autriche'].includes(data.diplomaCountry) && 'Traduction du titre de spécialiste',
     'Certificate of Good Standing',
-    isEU && isDiplomaEU && 'Attestation de conformite EU',
-    'Piece d\'identite / passeport',
-    'Photo d\'identite',
-    'CV medical',
+    isEU && isDiplomaEU && 'Attestation de conformité EU',
+    'Pièce d\'identité / passeport',
+    'Photo d\'identité',
+    'CV médical',
     'Formulaire de demande MEBEKO',
   ].filter(Boolean);
 
@@ -86,7 +86,7 @@ const MOCK_DATA = {
   nationality: 'Italie',
   diplomaCountry: 'Italie',
   diplomaYear: '2019',
-  specialty: 'Medecine interne generale',
+  specialty: 'Médecine interne générale',
   hasSpecialistTitle: false,
   specialistCountry: '',
 };
@@ -138,8 +138,8 @@ export default function DiagnosticPage() {
   return (
     <div className="animate-fade">
       <div className="mb-8">
-        <h1 className="text-2xl md:text-[28px] font-bold tracking-tight mb-2">Diagnostic d'eligibilite</h1>
-        <p className="text-gray-500 text-[15px]">Repondez a quelques questions pour determiner votre parcours de reconnaissance</p>
+        <h1 className="text-2xl md:text-[28px] font-bold tracking-tight mb-2">Diagnostic d'éligibilité</h1>
+        <p className="text-gray-500 text-[15px]">Répondez à quelques questions pour déterminer votre parcours de reconnaissance</p>
       </div>
 
       {step === 'result' && result ? (
@@ -226,7 +226,7 @@ function WizardView({ currentQ, step, totalSteps, data, onAnswer, onBack }) {
             className="mt-6 flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
           >
             <Icon.ChevronRight size={14} className="rotate-180" />
-            Question precedente
+            Question précédente
           </button>
         )}
       </Card>
@@ -244,22 +244,22 @@ function ResultView({ result, data, onReset, onContinue }) {
           </div>
           <div>
             <h2 className="text-lg font-bold">Votre diagnostic</h2>
-            <p className="text-sm text-gray-500">Basee sur vos reponses</p>
+            <p className="text-sm text-gray-500">Basée sur vos réponses</p>
           </div>
         </div>
 
         {/* Summary */}
         <div className="grid sm:grid-cols-3 gap-4 mb-6">
           <div className="p-4 bg-gray-50 rounded-xl">
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Procedure</div>
+            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Procédure</div>
             <div className="text-sm font-semibold">{result.procedure}</div>
           </div>
           <div className="p-4 bg-gray-50 rounded-xl">
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Delai estime</div>
+            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Délai estimé</div>
             <div className="text-sm font-semibold">{result.delay}</div>
           </div>
           <div className="p-4 bg-gray-50 rounded-xl">
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Cout MEBEKO</div>
+            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Coût MEBEKO</div>
             <div className="text-sm font-semibold">{result.cost}</div>
           </div>
         </div>
@@ -268,16 +268,16 @@ function ResultView({ result, data, onReset, onContinue }) {
         <div className="p-4 bg-install-bg/30 rounded-xl mb-6">
           <div className="text-xs font-bold text-install uppercase tracking-wide mb-3">Votre profil</div>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <div><span className="text-gray-500">Nationalite :</span> <strong>{data.nationality}</strong></div>
-            <div><span className="text-gray-500">Diplome :</span> <strong>{data.diplomaCountry}, {data.diplomaYear}</strong></div>
-            <div><span className="text-gray-500">Specialite :</span> <strong>{data.specialty}</strong></div>
-            <div><span className="text-gray-500">Titre de specialiste :</span> <strong>{data.hasSpecialistTitle ? 'Oui' : 'Non'}</strong></div>
+            <div><span className="text-gray-500">Nationalité :</span> <strong>{data.nationality}</strong></div>
+            <div><span className="text-gray-500">Diplôme :</span> <strong>{data.diplomaCountry}, {data.diplomaYear}</strong></div>
+            <div><span className="text-gray-500">Spécialité :</span> <strong>{data.specialty}</strong></div>
+            <div><span className="text-gray-500">Titre de spécialiste :</span> <strong>{data.hasSpecialistTitle ? 'Oui' : 'Non'}</strong></div>
           </div>
         </div>
 
         {/* Documents needed */}
         <div>
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Documents necessaires ({result.docs.length})</div>
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Documents nécessaires ({result.docs.length})</div>
           <div className="flex flex-col gap-2">
             {result.docs.map((doc, i) => (
               <div key={i} className="flex items-center gap-3 text-sm">

@@ -42,7 +42,7 @@ export default function InstallationLayout() {
           <button
             onClick={signOut}
             className="p-2 -mr-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
-            title="Se deconnecter"
+            title="Se déconnecter"
           >
             <Icon.LogOut size={20} />
           </button>

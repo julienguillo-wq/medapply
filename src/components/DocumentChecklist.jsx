@@ -2,9 +2,9 @@ import { useRef } from 'react';
 import { Icon } from './Icons';
 
 const STATUS_CONFIG = {
-  todo: { label: 'A fournir', bg: 'bg-gray-100', text: 'text-gray-500', icon: null },
-  uploaded: { label: 'Uploade', bg: 'bg-blue-50', text: 'text-blue-600', icon: Icon.Upload },
-  validated: { label: 'Valide', bg: 'bg-install-bg', text: 'text-install', icon: Icon.Check },
+  todo: { label: 'À fournir', bg: 'bg-gray-100', text: 'text-gray-500', icon: null },
+  uploaded: { label: 'Uploadé', bg: 'bg-blue-50', text: 'text-blue-600', icon: Icon.Upload },
+  validated: { label: 'Validé', bg: 'bg-install-bg', text: 'text-install', icon: Icon.Check },
 };
 
 export default function DocumentChecklist({ documents, onStatusChange, onFileUpload }) {

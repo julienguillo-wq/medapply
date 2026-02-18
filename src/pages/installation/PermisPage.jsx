@@ -20,13 +20,13 @@ export default function PermisPage() {
     {
       id: 'jobObtained',
       label: 'Offre d\'emploi / contrat obtenu',
-      description: isEUPath ? 'Recommande mais pas obligatoire pour UE/AELE' : 'Obligatoire pour obtenir un permis hors-UE',
+      description: isEUPath ? 'Recommandé mais pas obligatoire pour UE/AELE' : 'Obligatoire pour obtenir un permis hors-UE',
       checked: permis.jobObtained,
     },
     {
       id: 'permitRequested',
-      label: 'Demande de permis deposee',
-      description: 'Aupres des autorites cantonales de migration',
+      label: 'Demande de permis déposée',
+      description: 'Auprès des autorités cantonales de migration',
       checked: permis.permitRequested,
       showDate: true,
       date: permis.permitRequestDate,
@@ -69,17 +69,17 @@ export default function PermisPage() {
             </div>
             <div>
               <h2 className="text-base font-semibold">Permis B — Ressortissants UE/AELE</h2>
-              <p className="text-sm text-gray-400">Autorisation de sejour avec activite lucrative</p>
+              <p className="text-sm text-gray-400">Autorisation de séjour avec activité lucrative</p>
             </div>
           </div>
 
           <div className="space-y-3 text-sm text-gray-700 mb-4">
-            <p>En tant que ressortissant UE/AELE, vous beneficiez de la <strong>libre circulation des personnes</strong>. Le permis B est delivre quasi automatiquement si vous avez un contrat de travail ou une promesse d'embauche.</p>
-            <p>La demande est generalement faite par votre employeur (hopital/clinique). Vous recevrez votre permis par courrier apres votre inscription au controle des habitants.</p>
+            <p>En tant que ressortissant UE/AELE, vous bénéficiez de la <strong>libre circulation des personnes</strong>. Le permis B est délivré quasi automatiquement si vous avez un contrat de travail ou une promesse d'embauche.</p>
+            <p>La demande est généralement faite par votre employeur (hôpital/clinique). Vous recevrez votre permis par courrier après votre inscription au contrôle des habitants.</p>
           </div>
 
           <TipCard>
-            L'employeur (hopital) fait souvent la demande pour vous. Renseignez-vous aupres de votre futur service RH.
+            L'employeur (hôpital) fait souvent la demande pour vous. Renseignez-vous auprès de votre futur service RH.
           </TipCard>
         </Card>
       ) : (
@@ -95,18 +95,18 @@ export default function PermisPage() {
           </div>
 
           <div className="space-y-3 text-sm text-gray-700 mb-4">
-            <p>Pour les ressortissants hors-UE, l'obtention d'un permis de travail est soumise a des <strong>contingents annuels limites</strong> et a la demonstration que le poste ne peut pas etre pourvu par un candidat suisse ou UE.</p>
+            <p>Pour les ressortissants hors-UE, l'obtention d'un permis de travail est soumise à des <strong>contingents annuels limités</strong> et à la démonstration que le poste ne peut pas être pourvu par un candidat suisse ou UE.</p>
             <p>Conditions principales :</p>
             <ul className="list-disc pl-5 space-y-1">
               <li>Offre d'emploi ferme d'un employeur suisse (obligatoire)</li>
-              <li>Qualification elevee et experience demontree</li>
+              <li>Qualification élevée et expérience démontrée</li>
               <li>L'employeur doit prouver qu'aucun candidat local n'est disponible</li>
               <li>Le salaire doit correspondre aux normes suisses</li>
             </ul>
           </div>
 
           <TipCard variant="warning">
-            Les contingents sont limites et souvent epuises en debut d'annee. Anticipez votre demande le plus tot possible.
+            Les contingents sont limités et souvent épuisés en début d'année. Anticipez votre demande le plus tôt possible.
           </TipCard>
         </Card>
       )}

@@ -8,7 +8,7 @@ const SECTIONS = [
   {
     id: 'healthInsurance',
     title: 'Assurance maladie',
-    subtitle: 'Obligatoire dans les 3 mois suivant votre arrivee',
+    subtitle: 'Obligatoire dans les 3 mois suivant votre arrivée',
     icon: Icon.ShieldCheck,
     iconBg: 'bg-red-100',
     iconText: 'text-red-600',
@@ -16,18 +16,18 @@ const SECTIONS = [
       { name: 'Comparis.ch', description: 'Comparez les primes d\'assurance maladie', url: 'https://www.comparis.ch/krankenkassen', iconBg: 'bg-orange-100', iconText: 'text-orange-600' },
       { name: 'Priminfo.admin.ch', description: 'Portail officiel des primes LAMal', url: 'https://www.priminfo.admin.ch', iconBg: 'bg-blue-100', iconText: 'text-blue-600' },
     ],
-    tip: 'Comparez les primes, elles varient enormement par canton. La franchise la plus haute (2\'500 CHF) reduit vos primes mensuelles.',
+    tip: 'Comparez les primes, elles varient énormément par canton. La franchise la plus haute (2\'500 CHF) réduit vos primes mensuelles.',
   },
   {
     id: 'bankAccount',
     title: 'Compte bancaire',
-    subtitle: 'Necessaire pour recevoir votre salaire',
+    subtitle: 'Nécessaire pour recevoir votre salaire',
     icon: Icon.CreditCard,
     iconBg: 'bg-emerald-100',
     iconText: 'text-emerald-600',
     resources: [
       { name: 'PostFinance', description: 'Banque postale suisse — simple et accessible', url: 'https://www.postfinance.ch', iconBg: 'bg-yellow-100', iconText: 'text-yellow-600' },
-      { name: 'Neon', description: 'Neobanque suisse gratuite', url: 'https://www.neon-free.ch', iconBg: 'bg-cyan-100', iconText: 'text-cyan-600' },
+      { name: 'Neon', description: 'Néobanque suisse gratuite', url: 'https://www.neon-free.ch', iconBg: 'bg-cyan-100', iconText: 'text-cyan-600' },
       { name: 'UBS', description: 'Grande banque suisse traditionnelle', url: 'https://www.ubs.com/ch', iconBg: 'bg-red-100', iconText: 'text-red-600' },
       { name: 'Revolut', description: 'Banque en ligne internationale', url: 'https://www.revolut.com', iconBg: 'bg-violet-100', iconText: 'text-violet-600' },
     ],
@@ -35,15 +35,15 @@ const SECTIONS = [
   },
   {
     id: 'phoneSubscription',
-    title: 'Telephonie / Internet',
+    title: 'Téléphonie / Internet',
     subtitle: 'Abonnement mobile et internet fixe',
     icon: Icon.Phone,
     iconBg: 'bg-indigo-100',
     iconText: 'text-indigo-600',
     resources: [
-      { name: 'Swisscom', description: 'Operateur historique suisse', url: 'https://www.swisscom.ch', iconBg: 'bg-blue-100', iconText: 'text-blue-600' },
-      { name: 'Salt', description: 'Forfaits competitifs', url: 'https://www.salt.ch', iconBg: 'bg-green-100', iconText: 'text-green-600' },
-      { name: 'Sunrise', description: 'Deuxieme operateur suisse', url: 'https://www.sunrise.ch', iconBg: 'bg-amber-100', iconText: 'text-amber-600' },
+      { name: 'Swisscom', description: 'Opérateur historique suisse', url: 'https://www.swisscom.ch', iconBg: 'bg-blue-100', iconText: 'text-blue-600' },
+      { name: 'Salt', description: 'Forfaits compétitifs', url: 'https://www.salt.ch', iconBg: 'bg-green-100', iconText: 'text-green-600' },
+      { name: 'Sunrise', description: 'Deuxième opérateur suisse', url: 'https://www.sunrise.ch', iconBg: 'bg-amber-100', iconText: 'text-amber-600' },
       { name: 'Wingo', description: 'Low-cost par Swisscom', url: 'https://www.wingo.ch', iconBg: 'bg-pink-100', iconText: 'text-pink-600' },
     ],
     tip: null,
@@ -56,9 +56,9 @@ const SECTIONS = [
     iconBg: 'bg-purple-100',
     iconText: 'text-purple-600',
     resources: [
-      { name: 'CFF (SBB)', description: 'Chemins de fer federaux — demi-tarif et AG', url: 'https://www.sbb.ch', iconBg: 'bg-red-100', iconText: 'text-red-600' },
+      { name: 'CFF (SBB)', description: 'Chemins de fer fédéraux — demi-tarif et AG', url: 'https://www.sbb.ch', iconBg: 'bg-red-100', iconText: 'text-red-600' },
     ],
-    tip: 'Le demi-tarif a 185 CHF/an est indispensable. Il divise par deux le prix de tous les transports publics en Suisse. L\'abonnement general (AG) est rentable si vous voyagez quotidiennement.',
+    tip: 'Le demi-tarif à 185 CHF/an est indispensable. Il divise par deux le prix de tous les transports publics en Suisse. L\'abonnement général (AG) est rentable si vous voyagez quotidiennement.',
   },
 ];
 
@@ -77,14 +77,14 @@ export default function PratiquePage() {
     <div className="animate-fade">
       <div className="mb-8">
         <h1 className="text-2xl md:text-[28px] font-bold tracking-tight mb-2">Vie pratique</h1>
-        <p className="text-gray-500 text-[15px]">Les dernieres demarches pour votre installation en Suisse</p>
+        <p className="text-gray-500 text-[15px]">Les dernières démarches pour votre installation en Suisse</p>
       </div>
 
       {/* Progress summary */}
       <Card className="mb-8 animate-slide">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-medium text-gray-600">Demarches completees</div>
+            <div className="text-sm font-medium text-gray-600">Démarches complétées</div>
             <div className="text-2xl font-bold mt-1">{completedCount}<span className="text-gray-400 text-lg font-normal">/{totalCount}</span></div>
           </div>
           <div className="w-16 h-16 rounded-full border-4 border-install-bg flex items-center justify-center relative">
