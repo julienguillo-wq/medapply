@@ -126,6 +126,8 @@ export default function EstablishmentList({ establishments }) {
     );
   }
 
+  const hasScores = establishments.length > 0 && establishments[0]._score != null;
+
   const siwfUrl = (id) =>
     `https://register.siwf.ch/SiwfRegister/Detail/${id}?suchDatum=${new Date().toISOString().split('T')[0]}`;
 
@@ -142,8 +144,9 @@ export default function EstablishmentList({ establishments }) {
 
       {/* Desktop table */}
       <Card className="!p-0 hidden md:block">
-        <div className="grid grid-cols-[2fr_1.5fr_0.8fr_1.5fr_1.5fr_80px_60px] px-6 py-[18px] border-b border-gray-100 text-[11px] text-gray-400 uppercase tracking-wider font-semibold">
+        <div className={`grid ${hasScores ? 'grid-cols-[2fr_64px_1.5fr_0.8fr_1.2fr_1.5fr_70px_48px]' : 'grid-cols-[2fr_1.5fr_0.8fr_1.5fr_1.5fr_80px_60px]'} px-6 py-[18px] border-b border-gray-100 text-[11px] text-gray-400 uppercase tracking-wider font-semibold`}>
           <div>Établissement</div>
+          {hasScores && <div className="text-center">Match</div>}
           <div>Spécialité</div>
           <div>Catégorie</div>
           <div>Directeur</div>
@@ -154,17 +157,19 @@ export default function EstablishmentList({ establishments }) {
         {visible.map((est, i) => (
           <div
             key={est.id}
-            className={`grid grid-cols-[2fr_1.5fr_0.8fr_1.5fr_1.5fr_80px_60px] px-6 py-[18px] items-center text-sm transition-colors hover:bg-gray-50 ${
+            className={`grid ${hasScores ? 'grid-cols-[2fr_64px_1.5fr_0.8fr_1.2fr_1.5fr_70px_48px]' : 'grid-cols-[2fr_1.5fr_0.8fr_1.5fr_1.5fr_80px_60px]'} px-6 py-[18px] items-center text-sm transition-colors hover:bg-gray-50 ${
               i < visible.length - 1 ? 'border-b border-gray-100' : ''
             }`}
           >
-            <div className="min-w-0 flex items-center gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="font-semibold truncate">{est.name}</div>
-                <div className="text-[13px] text-gray-400">{est.city}{est.canton ? ` (${est.canton})` : ''}</div>
-              </div>
-              {est._score != null && <CompatibilityBadge score={est._score} compact />}
+            <div className="min-w-0">
+              <div className="font-semibold truncate">{est.name}</div>
+              <div className="text-[13px] text-gray-400">{est.city}{est.canton ? ` (${est.canton})` : ''}</div>
             </div>
+            {hasScores && (
+              <div className="flex justify-center">
+                {est._score != null ? <CompatibilityBadge score={est._score} /> : <span className="text-gray-300 text-[11px]">—</span>}
+              </div>
+            )}
             <div className="text-gray-600 text-[13px] truncate">{est.specialty || '—'}</div>
             <div>
               {est.category ? (

@@ -31,23 +31,38 @@ const colorMap = {
   },
 };
 
-export default function CompatibilityBadge({ score, compact = false }) {
+/**
+ * CompatibilityBadge
+ * - Default: 48x48 ring with "60%" + "Match" label below
+ * - inline: colored pill "Match 60%" (for mobile card header)
+ */
+export default function CompatibilityBadge({ score, inline = false }) {
   if (score === null || score === undefined) return null;
 
   const { label, color } = getScoreTier(score);
   const c = colorMap[color];
 
-  const size = compact ? 32 : 38;
-  const strokeWidth = compact ? 3 : 3.5;
+  // Inline pill mode for mobile
+  if (inline) {
+    return (
+      <span
+        className={`inline-flex items-center gap-1 ${c.bg} ${c.border} border rounded-full px-2.5 py-1 ${c.text}`}
+        title={label}
+      >
+        <span className="text-[11px] font-semibold">Match {score}%</span>
+      </span>
+    );
+  }
+
+  // Ring badge (desktop column)
+  const size = 48;
+  const strokeWidth = 3.5;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (score / 100) * circumference;
 
   return (
-    <div
-      className={`inline-flex items-center gap-1.5 ${compact ? '' : `${c.bg} ${c.border} border rounded-lg px-2 py-1`}`}
-      title={`${label} — ${score}%`}
-    >
+    <div className="flex flex-col items-center" title={label}>
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90">
           <circle
@@ -72,16 +87,12 @@ export default function CompatibilityBadge({ score, compact = false }) {
         </svg>
         <span
           className={`absolute inset-0 flex items-center justify-center font-bold ${c.text}`}
-          style={{ fontSize: compact ? 10 : 11 }}
+          style={{ fontSize: 12 }}
         >
-          {score}
+          {score}%
         </span>
       </div>
-      {!compact && (
-        <span className={`text-[11px] font-medium ${c.text} leading-tight`}>
-          {label}
-        </span>
-      )}
+      <span className={`text-[10px] font-medium ${c.text} mt-0.5`}>Match</span>
     </div>
   );
 }

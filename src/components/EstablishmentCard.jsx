@@ -52,22 +52,22 @@ export default function EstablishmentCard({ establishment, onApply }) {
   return (
     <div className="p-4 border border-gray-100 rounded-xl bg-white">
       <div className="flex justify-between items-start mb-2">
-        <div className="min-w-0 flex-1 flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="font-semibold text-sm truncate">{name}</div>
-            <div className="text-[13px] text-gray-400">{city}{canton ? ` (${canton})` : ''}</div>
-          </div>
-          {establishment._score != null && <CompatibilityBadge score={establishment._score} compact />}
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-sm truncate">{name}</div>
+          <div className="text-[13px] text-gray-400">{city}{canton ? ` (${canton})` : ''}</div>
         </div>
-        <a
-          href={siwfUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-gray-400 hover:text-primary shrink-0 ml-2"
-          title="Fiche SIWF"
-        >
-          <Icon.ExternalLink size={16} />
-        </a>
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          {establishment._score != null && <CompatibilityBadge score={establishment._score} inline />}
+          <a
+            href={siwfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-400 hover:text-primary"
+            title="Fiche SIWF"
+          >
+            <Icon.ExternalLink size={16} />
+          </a>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-1.5 mb-3">
