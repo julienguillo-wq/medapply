@@ -3,6 +3,7 @@
 // Gère l'envoi d'emails via SMTP Gmail (nodemailer)
 // ============================================================
 
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
