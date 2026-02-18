@@ -5,20 +5,37 @@ import { Icon } from '../components/Icons';
 import { useAuth } from '../contexts/AuthContext';
 import { getEmailConfig, saveEmailConfig, testSmtpConnection } from '../services/emailConfigService';
 
-const SWISS_CANTONS = [
-  { code: 'AG', name: 'Argovie' }, { code: 'AI', name: 'Appenzell RI' },
-  { code: 'AR', name: 'Appenzell RE' }, { code: 'BE', name: 'Berne' },
-  { code: 'BL', name: 'Bâle-Campagne' }, { code: 'BS', name: 'Bâle-Ville' },
-  { code: 'FR', name: 'Fribourg' }, { code: 'GE', name: 'Genève' },
-  { code: 'GL', name: 'Glaris' }, { code: 'GR', name: 'Grisons' },
-  { code: 'JU', name: 'Jura' }, { code: 'LU', name: 'Lucerne' },
-  { code: 'NE', name: 'Neuchâtel' }, { code: 'NW', name: 'Nidwald' },
-  { code: 'OW', name: 'Obwald' }, { code: 'SG', name: 'Saint-Gall' },
-  { code: 'SH', name: 'Schaffhouse' }, { code: 'SO', name: 'Soleure' },
-  { code: 'SZ', name: 'Schwytz' }, { code: 'TG', name: 'Thurgovie' },
-  { code: 'TI', name: 'Tessin' }, { code: 'UR', name: 'Uri' },
-  { code: 'VD', name: 'Vaud' }, { code: 'VS', name: 'Valais' },
-  { code: 'ZG', name: 'Zoug' }, { code: 'ZH', name: 'Zurich' },
+const CANTON_LANGUAGE_GROUPS = [
+  {
+    id: 'fr', label: 'Français', emoji: '\u{1F1EB}\u{1F1F7}',
+    cantons: [
+      { code: 'GE', name: 'Genève' }, { code: 'VD', name: 'Vaud' },
+      { code: 'NE', name: 'Neuchâtel' }, { code: 'JU', name: 'Jura' },
+      { code: 'FR', name: 'Fribourg' }, { code: 'VS', name: 'Valais' },
+      { code: 'BE', name: 'Berne' },
+    ],
+  },
+  {
+    id: 'de', label: 'Allemand', emoji: '\u{1F1E9}\u{1F1EA}',
+    cantons: [
+      { code: 'ZH', name: 'Zurich' }, { code: 'BE', name: 'Berne' },
+      { code: 'LU', name: 'Lucerne' }, { code: 'UR', name: 'Uri' },
+      { code: 'SZ', name: 'Schwyz' }, { code: 'OW', name: 'Obwald' },
+      { code: 'NW', name: 'Nidwald' }, { code: 'GL', name: 'Glaris' },
+      { code: 'ZG', name: 'Zoug' }, { code: 'SO', name: 'Soleure' },
+      { code: 'BS', name: 'Bâle-Ville' }, { code: 'BL', name: 'Bâle-Campagne' },
+      { code: 'SH', name: 'Schaffhouse' }, { code: 'AR', name: 'Appenzell Rh.-Ext.' },
+      { code: 'AI', name: 'Appenzell Rh.-Int.' }, { code: 'SG', name: 'Saint-Gall' },
+      { code: 'GR', name: 'Grisons' }, { code: 'AG', name: 'Argovie' },
+      { code: 'TG', name: 'Thurgovie' },
+    ],
+  },
+  {
+    id: 'it', label: 'Italien', emoji: '\u{1F1EE}\u{1F1F9}',
+    cantons: [
+      { code: 'TI', name: 'Tessin' }, { code: 'GR', name: 'Grisons' },
+    ],
+  },
 ];
 
 const allQuestions = [
@@ -156,6 +173,16 @@ export default function ProfilePage() {
     setPreferredCantons(prev =>
       prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
     );
+  };
+
+  const toggleGroupCantons = (groupCantons) => {
+    const codes = groupCantons.map(c => c.code);
+    const allSelected = codes.every(code => preferredCantons.includes(code));
+    if (allSelected) {
+      setPreferredCantons(prev => prev.filter(c => !codes.includes(c)));
+    } else {
+      setPreferredCantons(prev => [...new Set([...prev, ...codes])]);
+    }
   };
 
   const saveCantons = async () => {
@@ -486,32 +513,60 @@ export default function ProfilePage() {
         </p>
 
         <Card>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {SWISS_CANTONS.map(({ code, name }) => {
-              const selected = preferredCantons.includes(code);
+          <div className="space-y-5">
+            {CANTON_LANGUAGE_GROUPS.map((group, gi) => {
+              const codes = group.cantons.map(c => c.code);
+              const allSelected = codes.every(code => preferredCantons.includes(code));
+              const someSelected = codes.some(code => preferredCantons.includes(code));
               return (
-                <button
-                  key={code}
-                  onClick={() => toggleCanton(code)}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-[13px] font-medium text-left transition-all cursor-pointer ${
-                    selected
-                      ? 'bg-primary text-white'
-                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <span className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
-                    selected ? 'border-white bg-white/20' : 'border-gray-300'
-                  }`}>
-                    {selected && <Icon.Check size={10} />}
-                  </span>
-                  <span className="truncate">{code} — {name}</span>
-                </button>
+                <div key={group.id} className={gi > 0 ? 'pt-5 border-t border-gray-100' : ''}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <span>{group.emoji}</span>
+                      {group.label}
+                      <span className="text-xs font-normal text-gray-400">({group.cantons.length})</span>
+                    </h4>
+                    <button
+                      onClick={() => toggleGroupCantons(group.cantons)}
+                      className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                        allSelected
+                          ? 'text-red-600 bg-red-50 hover:bg-red-100'
+                          : 'text-primary bg-primary/5 hover:bg-primary/10'
+                      }`}
+                    >
+                      {allSelected ? 'Tout désélectionner' : 'Tout sélectionner'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {group.cantons.map(({ code, name }) => {
+                      const selected = preferredCantons.includes(code);
+                      return (
+                        <button
+                          key={`${group.id}-${code}`}
+                          onClick={() => toggleCanton(code)}
+                          className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-[13px] font-medium text-left transition-all cursor-pointer ${
+                            selected
+                              ? 'bg-primary text-white'
+                              : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                          }`}
+                        >
+                          <span className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
+                            selected ? 'border-white bg-white/20' : 'border-gray-300'
+                          }`}>
+                            {selected && <Icon.Check size={10} />}
+                          </span>
+                          <span className="truncate">{code} — {name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </div>
 
           {preferredCantons.length > 0 && (
-            <div className="mt-4 text-[13px] text-gray-500">
+            <div className="mt-5 text-[13px] text-gray-500">
               {preferredCantons.length} canton{preferredCantons.length > 1 ? 's' : ''} sélectionné{preferredCantons.length > 1 ? 's' : ''}
             </div>
           )}
