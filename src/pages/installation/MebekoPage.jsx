@@ -31,6 +31,20 @@ const HORS_UE_DOCUMENTS = [
   { id: 'formulaire', name: 'Formulaire de demande MEBEKO', description: 'Formulaire officiel à télécharger et remplir', tip: 'Disponible sur le site bag.admin.ch' },
 ];
 
+// Mapping: MebekoPage doc ID → onboarding (Phase 3) doc ID
+const MEBEKO_TO_ONBOARDING = {
+  diplome: 'diplome',
+  trad_diplome: 'traduction_diplome',
+  titre_postgrade: 'titre_specialiste',
+  trad_titre: 'titre_specialiste',
+  good_standing: 'good_standing',
+  conformite_eu: 'conformite_eu',
+  passeport: 'identite',
+  photo: 'photo',
+  cv: 'cv_medical',
+  formulaire: 'formulaire_mebeko',
+};
+
 const TIMELINE_STEPS = [
   { id: 'preparation', emoji: '\uD83D\uDCCB', label: 'Dossier en préparation', hint: 'Rassemblez tous les documents requis', badge: null },
   { id: 'sent', emoji: '\uD83D\uDCE4', label: 'Dossier envoyé', hint: 'Envoi postal recommandé à la MEBEKO', badge: null },
@@ -44,11 +58,28 @@ export default function MebekoPage() {
   const mebeko = state.mebeko;
   const [activeTab, setActiveTab] = useState('documents');
 
+  const onboardingDocs = state.diagnostic.documents || {};
   const templateDocs = isEUPath ? EU_DOCUMENTS : HORS_UE_DOCUMENTS;
-  const documents = templateDocs.map(doc => ({
-    ...doc,
-    status: mebeko.documents[doc.id]?.status || 'todo',
-  }));
+  const documents = templateDocs.map(doc => {
+    const mebekoStatus = mebeko.documents[doc.id]?.status;
+    const onboardingId = MEBEKO_TO_ONBOARDING[doc.id];
+    const onboardingChoice = onboardingId ? onboardingDocs[onboardingId] : null;
+
+    // Onboarding choice takes priority over default 'todo', but not over
+    // explicit user actions (uploaded / validated) in MebekoPage itself
+    let status;
+    if (onboardingChoice === 'docstart' && mebekoStatus !== 'validated') {
+      status = 'docstart';
+    } else if (mebekoStatus) {
+      status = mebekoStatus;
+    } else if (onboardingChoice === 'has') {
+      status = 'uploaded';
+    } else {
+      status = 'todo';
+    }
+
+    return { ...doc, status };
+  });
 
   const timelineSteps = TIMELINE_STEPS.map((step, i) => {
     const data = mebeko.timeline[step.id] || {};
