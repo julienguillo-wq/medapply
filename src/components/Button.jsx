@@ -3,6 +3,7 @@ export default function Button({ children, variant = 'primary', size = 'medium',
 
   const variants = {
     primary: 'bg-primary hover:bg-primary-light text-white shadow-[0_4px_14px_rgba(0,102,255,0.25)] hover:shadow-[0_6px_20px_rgba(0,102,255,0.35)]',
+    install: 'bg-install hover:bg-install-light text-white shadow-[0_4px_14px_rgba(13,148,136,0.25)] hover:shadow-[0_6px_20px_rgba(13,148,136,0.35)]',
     secondary: 'bg-white hover:bg-gray-50 text-gray-900 border border-gray-200',
     ghost: 'bg-transparent hover:bg-gray-100 text-gray-600',
   };

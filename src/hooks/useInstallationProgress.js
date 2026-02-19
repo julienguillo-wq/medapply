@@ -5,14 +5,33 @@ const STORAGE_KEY = 'medapply_installation';
 const DEFAULT_STATE = {
   diagnostic: {
     completed: false,
-    data: {
-      nationality: '',
-      diplomaCountry: '',
-      diplomaYear: '',
-      specialty: '',
-      hasSpecialistTitle: null,
-      specialistCountry: '',
+    currentPhase: 1,
+    dossierNumber: null,
+
+    identity: {
+      firstName: '', lastName: '', email: '',
+      phoneCode: '+33', phoneNumber: '',
+      nationality: '', residenceCountry: '',
+      languages: [],
     },
+    career: {
+      diplomaCountry: '', university: '', diplomaYear: '',
+      specialistStatus: '',
+      specialistTitle: '', specialistCountry: '', specialistYear: '',
+      specialistExpectedYear: '',
+      clinicalExperienceYears: '',
+      currentJobTitle: '', currentEstablishment: '', currentCountry: '',
+      targetCantons: [],
+      desiredArrivalDate: '',
+    },
+    documents: {},
+    service: {
+      selectedPlan: '',
+      includeMebekoTaxes: false,
+    },
+
+    // Legacy compat
+    data: null,
     result: null,
   },
   mebeko: {
@@ -52,16 +71,56 @@ const DEFAULT_STATE = {
   },
 };
 
+function migrateDiagnostic(diag) {
+  // If old format (has data but no identity), migrate
+  if (diag?.data && !diag?.identity?.firstName) {
+    const old = diag.data;
+    return {
+      ...DEFAULT_STATE.diagnostic,
+      completed: diag.completed || false,
+      currentPhase: diag.completed ? 'summary' : 1,
+      identity: {
+        ...DEFAULT_STATE.diagnostic.identity,
+        nationality: old.nationality || '',
+      },
+      career: {
+        ...DEFAULT_STATE.diagnostic.career,
+        diplomaCountry: old.diplomaCountry || '',
+        diplomaYear: old.diplomaYear || '',
+        specialistStatus: old.hasSpecialistTitle === true ? 'yes' : old.hasSpecialistTitle === false ? 'no' : '',
+        specialistTitle: old.specialty || '',
+        specialistCountry: old.specialistCountry || '',
+      },
+      documents: diag.documents || {},
+      service: diag.service || DEFAULT_STATE.diagnostic.service,
+      // Keep legacy for MebekoPage compat
+      data: old,
+      result: diag.result || null,
+    };
+  }
+  return diag;
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_STATE;
     const parsed = JSON.parse(raw);
-    // Merge with defaults to handle new fields
+
+    const diagRaw = { ...DEFAULT_STATE.diagnostic, ...parsed.diagnostic };
+    const diagMigrated = migrateDiagnostic(diagRaw);
+
     return {
       ...DEFAULT_STATE,
       ...parsed,
-      diagnostic: { ...DEFAULT_STATE.diagnostic, ...parsed.diagnostic, data: { ...DEFAULT_STATE.diagnostic.data, ...parsed.diagnostic?.data } },
+      diagnostic: {
+        ...DEFAULT_STATE.diagnostic,
+        ...diagMigrated,
+        identity: { ...DEFAULT_STATE.diagnostic.identity, ...diagMigrated.identity },
+        career: { ...DEFAULT_STATE.diagnostic.career, ...diagMigrated.career },
+        documents: { ...DEFAULT_STATE.diagnostic.documents, ...diagMigrated.documents },
+        service: { ...DEFAULT_STATE.diagnostic.service, ...diagMigrated.service },
+      },
       mebeko: { ...DEFAULT_STATE.mebeko, ...parsed.mebeko, timeline: { ...DEFAULT_STATE.mebeko.timeline, ...parsed.mebeko?.timeline } },
       langue: { ...DEFAULT_STATE.langue, ...parsed.langue },
       permis: { ...DEFAULT_STATE.permis, ...parsed.permis },
@@ -90,7 +149,6 @@ function isEU(nationality) {
 
 function computeStepStatus(state) {
   const diag = state.diagnostic;
-  const diagCompleted = diag.completed;
 
   const mebekoDocCount = Object.values(state.mebeko.documents).filter(d => d.status === 'uploaded' || d.status === 'validated').length;
   const mebekoTimelineProgress = Object.values(state.mebeko.timeline).some(t => t.done);
@@ -117,7 +175,9 @@ function computeStepStatus(state) {
   }
 
   return {
-    diagnostic: diagCompleted ? 'completed' : (diag.data.nationality ? 'in_progress' : 'todo'),
+    diagnostic: diag.completed ? 'completed' : (
+      (diag.identity?.firstName || diag.currentPhase > 1) ? 'in_progress' : 'todo'
+    ),
     mebeko: status(mebekoStarted, mebekoCompleted),
     langue: status(langueStarted, langueCompleted),
     permis: status(permisStarted, permisCompleted),
@@ -149,7 +209,10 @@ export default function useInstallationProgress() {
 
   const stepStatuses = computeStepStatus(state);
   const progress = computeProgress(stepStatuses);
-  const isEUPath = isEU(state.diagnostic.data.nationality);
+
+  // Support both new and old state shapes
+  const nat = state.diagnostic.identity?.nationality || state.diagnostic.data?.nationality || '';
+  const isEUPath = isEU(nat);
 
   return {
     state,
