@@ -94,7 +94,7 @@ async function getUserSendContext(supabase, userId) {
       const sigParts = [];
       const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
       if (fullName) sigParts.push(fullName);
-      if (profile.specialty) sigParts.push(`Médecin assistante en ${profile.specialty}`);
+      sigParts.push('Médecin assistante');
       if (profile.phone) sigParts.push(`Tél : ${profile.phone}`);
       if (profile.email) sigParts.push(profile.email);
       if (sigParts.length > 0) {
