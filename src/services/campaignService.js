@@ -90,3 +90,11 @@ export async function updateCampaignStatus(campaignId, status) {
 
   return { data, error };
 }
+
+/**
+ * Récupère le statut du cron scheduler.
+ */
+export async function getCronStatus() {
+  const res = await fetch(`${API_BASE}/cron/status`);
+  return res.json();
+}
