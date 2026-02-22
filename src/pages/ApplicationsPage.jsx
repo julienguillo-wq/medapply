@@ -17,11 +17,11 @@ const URGENT_DAYS = 21;
 
 const allStatuses = {
   draft:     { label: 'Brouillon',          variant: 'default', icon: <Icon.Edit size={12} /> },
-  sent:      { label: 'Envoyee',            variant: 'warning', icon: <Icon.Send size={12} /> },
-  replied:   { label: 'Reponse positive',   variant: 'success', icon: <Icon.Check size={12} /> },
-  interview: { label: 'Entretien propose',  variant: 'primary', icon: <Icon.Calendar size={12} /> },
-  accepted:  { label: 'Acceptee',           variant: 'success', icon: <Icon.Check size={12} /> },
-  rejected:  { label: 'Refusee',            variant: 'error',   icon: <Icon.X size={12} /> },
+  sent:      { label: 'Envoyée',             variant: 'warning', icon: <Icon.Send size={12} /> },
+  replied:   { label: 'Réponse positive',   variant: 'success', icon: <Icon.Check size={12} /> },
+  interview: { label: 'Entretien proposé',  variant: 'primary', icon: <Icon.Calendar size={12} /> },
+  accepted:  { label: 'Acceptée',           variant: 'success', icon: <Icon.Check size={12} /> },
+  rejected:  { label: 'Refusée',            variant: 'error',   icon: <Icon.X size={12} /> },
 };
 
 function daysSince(dateStr) {
@@ -70,10 +70,10 @@ function getColumn(cand) {
 }
 
 const columns = [
-  { id: 'sent',    title: 'Envoyees',       iconName: 'Send',          borderColor: 'border-blue-300',   bgColor: 'bg-blue-50',   textColor: 'text-blue-700',   headerBg: 'bg-blue-100',    barColor: 'bg-blue-400',    emptyMsg: 'Lancez vos candidatures depuis la page Recherche' },
-  { id: 'relance', title: 'A relancer',     iconName: 'AlertTriangle', borderColor: 'border-orange-300', bgColor: 'bg-orange-50', textColor: 'text-orange-700', headerBg: 'bg-orange-100',  barColor: 'bg-orange-400',  emptyMsg: 'Tout va bien, aucune relance necessaire' },
-  { id: 'replied', title: 'Reponse recue',  iconName: 'Mail',          borderColor: 'border-emerald-300',bgColor: 'bg-emerald-50',textColor: 'text-emerald-700',headerBg: 'bg-emerald-100', barColor: 'bg-emerald-400', emptyMsg: 'Les reponses arrivent bientot...' },
-  { id: 'done',    title: 'Terminee',       iconName: 'Check',         borderColor: 'border-gray-300',   bgColor: 'bg-gray-50',   textColor: 'text-gray-600',   headerBg: 'bg-gray-100',    barColor: 'bg-gray-400',    emptyMsg: 'Vos futures reussites apparaitront ici' },
+  { id: 'sent',    title: 'Envoyées',       iconName: 'Send',          borderColor: 'border-blue-300',   bgColor: 'bg-blue-50',   textColor: 'text-blue-700',   headerBg: 'bg-blue-100',    barColor: 'bg-blue-400',    emptyMsg: 'Lancez vos candidatures depuis la page Recherche' },
+  { id: 'relance', title: 'À relancer',     iconName: 'AlertTriangle', borderColor: 'border-orange-300', bgColor: 'bg-orange-50', textColor: 'text-orange-700', headerBg: 'bg-orange-100',  barColor: 'bg-orange-400',  emptyMsg: 'Tout va bien, aucune relance nécessaire' },
+  { id: 'replied', title: 'Réponse reçue',  iconName: 'Mail',          borderColor: 'border-emerald-300',bgColor: 'bg-emerald-50',textColor: 'text-emerald-700',headerBg: 'bg-emerald-100', barColor: 'bg-emerald-400', emptyMsg: 'Les réponses arrivent bientôt...' },
+  { id: 'done',    title: 'Terminée',       iconName: 'Check',         borderColor: 'border-gray-300',   bgColor: 'bg-gray-50',   textColor: 'text-gray-600',   headerBg: 'bg-gray-100',    barColor: 'bg-gray-400',    emptyMsg: 'Vos futures réussites apparaîtront ici' },
 ];
 
 // ============================================================
@@ -88,7 +88,7 @@ function RelanceBadge({ cand }) {
     <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
       urgent ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
     }`}>
-      {days}j sans reponse{urgent ? ' !' : ''}
+      {days}j sans réponse{urgent ? ' !' : ''}
     </span>
   );
 }
@@ -107,13 +107,13 @@ function ResponsePopup({ onSelect, onClose }) {
 
   const options = [
     { status: 'replied',   label: 'Positive',          icon: <Icon.Check size={14} className="text-emerald-600" /> },
-    { status: 'rejected',  label: 'Negative',          icon: <Icon.X size={14} className="text-red-500" /> },
-    { status: 'interview', label: 'Entretien propose',  icon: <Icon.Calendar size={14} className="text-blue-600" /> },
+    { status: 'rejected',  label: 'Négative',          icon: <Icon.X size={14} className="text-red-500" /> },
+    { status: 'interview', label: 'Entretien proposé',  icon: <Icon.Calendar size={14} className="text-blue-600" /> },
   ];
 
   return (
     <div ref={ref} className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 min-w-[180px] animate-fade">
-      <div className="px-3 py-1.5 text-[11px] text-gray-400 uppercase tracking-wider font-semibold">Type de reponse</div>
+      <div className="px-3 py-1.5 text-[11px] text-gray-400 uppercase tracking-wider font-semibold">Type de réponse</div>
       {options.map(opt => (
         <button
           key={opt.status}
@@ -223,7 +223,7 @@ function KanbanCard({ cand, onUpdate, onSelect, onRelance, columnId }) {
             )}
             {columnId === 'done' && (
               <Badge variant={statusCfg.variant} icon={statusCfg.icon}>
-                {cand.status === 'accepted' ? 'Acceptee' : 'Refusee'}
+                {cand.status === 'accepted' ? 'Acceptée' : 'Refusée'}
               </Badge>
             )}
           </div>
@@ -260,7 +260,7 @@ function KanbanCard({ cand, onUpdate, onSelect, onRelance, columnId }) {
             <button
               onClick={(e) => { e.stopPropagation(); setShowResponse(!showResponse); }}
               className="text-[11px] text-gray-400 hover:text-emerald-600 px-2 py-1 rounded-lg hover:bg-emerald-50 cursor-pointer transition-colors"
-              title="Reponse recue"
+              title="Réponse reçue"
             >
               <Icon.Mail size={13} />
             </button>
@@ -382,7 +382,7 @@ function DistributionBar({ columnData, total }) {
   return (
     <div className="mt-4 mb-2">
       <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1.5">
-        <span>Repartition</span>
+        <span>Répartition</span>
         <span>{total} candidature{total > 1 ? 's' : ''}</span>
       </div>
       <div className="flex h-2 rounded-full overflow-hidden bg-gray-100">
@@ -453,9 +453,9 @@ function DetailPanel({ cand: initial, onClose, onUpdate, user, profile }) {
     const director = cand.director_name || 'Madame, Monsieur';
     return `Cher Docteur ${director},
 
-Je me permets de revenir vers vous concernant ma candidature envoyee le ${formatDate(cand.sent_at || cand.created_at)} pour un poste de medecin assistante au sein de ${cand.establishment_name}.
+Je me permets de revenir vers vous concernant ma candidature envoyée le ${formatDate(cand.sent_at || cand.created_at)} pour un poste de médecin assistante au sein de ${cand.establishment_name}.
 
-N'ayant pas encore eu de retour de votre part, je souhaitais renouveler mon interet pour cette opportunite et reste a votre entiere disposition pour tout entretien ou information complementaire.
+N'ayant pas encore eu de retour de votre part, je souhaitais renouveler mon intérêt pour cette opportunité et reste à votre entière disposition pour tout entretien ou information complémentaire.
 
 Mes meilleures salutations,
 ${userName}`;
@@ -464,7 +464,7 @@ ${userName}`;
   async function handleSendRelance() {
     setSendingRelance(true);
     setRelanceResult(null);
-    const subject = `Relance - Candidature ${cand.specialty || 'Medecine'} - ${userName}`;
+    const subject = `Relance - Candidature ${cand.specialty || 'Médecine'} - ${userName}`;
     const body = generateRelanceText();
     try {
       const result = await sendApplication({
@@ -476,7 +476,7 @@ ${userName}`;
         establishmentId: cand.establishment_id,
       });
       if (result.success) {
-        setRelanceResult({ type: 'success', text: 'Relance envoyee !' });
+        setRelanceResult({ type: 'success', text: 'Relance envoyée !' });
       } else {
         setRelanceResult({ type: 'error', text: result.error || 'Erreur' });
       }
@@ -492,7 +492,7 @@ ${userName}`;
       <div className="fixed right-0 top-0 h-full w-full max-w-[560px] bg-white z-50 shadow-2xl flex flex-col animate-slide-left overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold truncate">Details</h2>
+          <h2 className="text-lg font-bold truncate">Détails</h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
             <Icon.X size={20} className="text-gray-400" />
           </button>
@@ -549,7 +549,7 @@ ${userName}`;
           {/* Motivation letter */}
           {cand.motivation_letter && (
             <div>
-              <div className="text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">Lettre envoyee</div>
+              <div className="text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">Lettre envoyée</div>
               <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap max-h-[200px] overflow-y-auto">
                 {cand.motivation_letter}
               </div>
@@ -565,7 +565,7 @@ ${userName}`;
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: rappeler lundi, demande de CV supplementaire..."
+              placeholder="Ex: rappeler lundi, demande de CV supplémentaire..."
               rows={3}
               className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-white resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
@@ -580,12 +580,12 @@ ${userName}`;
           {cand.director_email && (cand.status === 'sent') && (
             <div>
               <Button variant="secondary" size="small" fullWidth onClick={() => setShowRelance(!showRelance)} icon={<Icon.Send size={14} />}>
-                {showRelance ? 'Masquer la relance' : 'Generer un mail de relance'}
+                {showRelance ? 'Masquer la relance' : 'Générer un mail de relance'}
               </Button>
 
               {showRelance && (
                 <div className="mt-3 bg-orange-50 border border-orange-100 rounded-xl p-4">
-                  <div className="text-[11px] text-orange-500 uppercase tracking-wider mb-2">Modele de relance</div>
+                  <div className="text-[11px] text-orange-500 uppercase tracking-wider mb-2">Modèle de relance</div>
                   <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap mb-3">{generateRelanceText()}</div>
                   <div className="flex gap-2">
                     <Button size="small" onClick={handleSendRelance} disabled={sendingRelance} icon={<Icon.Send size={14} />}>
@@ -665,15 +665,15 @@ function TableView({ candidatures, onUpdate, onSelect, onDelete }) {
       {filtered.length === 0 ? (
         <Card className="text-center !py-10">
           <Icon.Search size={32} className="mx-auto text-gray-300 mb-3" />
-          <div className="text-gray-500 text-sm">Aucun resultat</div>
+          <div className="text-gray-500 text-sm">Aucun résultat</div>
         </Card>
       ) : (
         <>
           {/* Desktop */}
           <Card className="!p-0 hidden md:block">
             <div className="grid grid-cols-[2fr_1fr_1fr_100px_160px_80px] px-6 py-[18px] border-b border-gray-100 text-[11px] text-gray-400 uppercase tracking-wider font-semibold">
-              <div>Etablissement</div>
-              <div>Specialite</div>
+              <div>Établissement</div>
+              <div>Spécialité</div>
               <div>Directeur</div>
               <div>Date</div>
               <div>Statut</div>
@@ -700,7 +700,7 @@ function TableView({ candidatures, onUpdate, onSelect, onDelete }) {
                     {cand.status === 'sent' && days >= RELANCE_DAYS && <RelanceBadge cand={cand} />}
                   </div>
                   <div className="text-right">
-                    <Button variant="ghost" size="small" onClick={() => onSelect(cand)}>Details</Button>
+                    <Button variant="ghost" size="small" onClick={() => onSelect(cand)}>Détails</Button>
                   </div>
                 </div>
               );
@@ -745,9 +745,9 @@ function RelanceModal({ cand, onClose, user, profile }) {
 
   const relanceText = `Cher Docteur ${cand.director_name || 'Madame, Monsieur'},
 
-Je me permets de revenir vers vous concernant ma candidature envoyee le ${formatDate(cand.sent_at || cand.created_at)} pour un poste de medecin assistante au sein de ${cand.establishment_name}.
+Je me permets de revenir vers vous concernant ma candidature envoyée le ${formatDate(cand.sent_at || cand.created_at)} pour un poste de médecin assistante au sein de ${cand.establishment_name}.
 
-N'ayant pas encore eu de retour de votre part, je souhaitais renouveler mon interet pour cette opportunite et reste a votre entiere disposition pour tout entretien ou information complementaire.
+N'ayant pas encore eu de retour de votre part, je souhaitais renouveler mon intérêt pour cette opportunité et reste à votre entière disposition pour tout entretien ou information complémentaire.
 
 Mes meilleures salutations,
 ${userName}`;
@@ -757,13 +757,13 @@ ${userName}`;
     try {
       const res = await sendApplication({
         to: cand.director_email,
-        subject: `Relance - Candidature ${cand.specialty || 'Medecine'} - ${userName}`,
+        subject: `Relance - Candidature ${cand.specialty || 'Médecine'} - ${userName}`,
         body: relanceText,
         userName,
         userId: user.id,
         establishmentId: cand.establishment_id,
       });
-      setResult(res.success ? { type: 'success', text: 'Relance envoyee !' } : { type: 'error', text: res.error });
+      setResult(res.success ? { type: 'success', text: 'Relance envoyée !' } : { type: 'error', text: res.error });
     } catch (err) {
       setResult({ type: 'error', text: err.message });
     }
@@ -918,13 +918,13 @@ export default function ApplicationsPage() {
       <div className="animate-fade">
         <div className="mb-8">
           <h1 className="text-[28px] font-bold tracking-tight mb-2">Candidatures</h1>
-          <p className="text-gray-500 text-[15px]">Gerez vos candidatures spontanees</p>
+          <p className="text-gray-500 text-[15px]">Gérez vos candidatures spontanées</p>
         </div>
         <Card className="text-center !py-16 !px-10">
           <Icon.Send size={40} className="mx-auto text-gray-300 mb-4" />
           <h2 className="text-lg font-bold mb-2">Aucune candidature</h2>
           <p className="text-gray-500 text-sm max-w-[380px] mx-auto">
-            Recherchez un etablissement dans la page Recherche et cliquez sur &laquo; Postuler &raquo; pour creer votre premiere candidature.
+            Recherchez un établissement dans la page Recherche et cliquez sur &laquo; Postuler &raquo; pour créer votre première candidature.
           </p>
         </Card>
       </div>
@@ -965,8 +965,8 @@ export default function ApplicationsPage() {
       {relanceCount > 0 && (
         <div className="flex items-center gap-2 px-4 py-2.5 mb-5 bg-orange-50 border border-orange-100 rounded-xl text-sm text-orange-700">
           <Icon.AlertTriangle size={16} className="shrink-0" />
-          <span className="font-semibold">{relanceCount} candidature{relanceCount > 1 ? 's' : ''} a relancer</span>
-          <span className="text-orange-500">-- plus de {RELANCE_DAYS} jours sans reponse</span>
+          <span className="font-semibold">{relanceCount} candidature{relanceCount > 1 ? 's' : ''} à relancer</span>
+          <span className="text-orange-500">-- plus de {RELANCE_DAYS} jours sans réponse</span>
         </div>
       )}
 
@@ -1005,33 +1005,33 @@ export default function ApplicationsPage() {
         <div className="animate-fade fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4" onClick={() => setDropTarget(null)}>
           <Card className="animate-scale max-w-[360px] w-full" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold mb-4">
-              {dropTarget.columnId === 'replied' ? 'Type de reponse' : 'Resultat final'}
+              {dropTarget.columnId === 'replied' ? 'Type de réponse' : 'Résultat final'}
             </h3>
             <div className="space-y-2">
               {dropTarget.columnId === 'replied' ? (
                 <>
                   <button onClick={() => handleDropSelect('replied')} className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 cursor-pointer transition-colors">
                     <Icon.Check size={18} className="text-emerald-600" />
-                    <span className="font-medium">Reponse positive</span>
+                    <span className="font-medium">Réponse positive</span>
                   </button>
                   <button onClick={() => handleDropSelect('rejected')} className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 cursor-pointer transition-colors">
                     <Icon.X size={18} className="text-red-500" />
-                    <span className="font-medium">Reponse negative</span>
+                    <span className="font-medium">Réponse négative</span>
                   </button>
                   <button onClick={() => handleDropSelect('interview')} className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-colors">
                     <Icon.Calendar size={18} className="text-blue-600" />
-                    <span className="font-medium">Entretien propose</span>
+                    <span className="font-medium">Entretien proposé</span>
                   </button>
                 </>
               ) : (
                 <>
                   <button onClick={() => handleDropSelect('accepted')} className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 cursor-pointer transition-colors">
                     <Icon.Check size={18} className="text-emerald-600" />
-                    <span className="font-medium">Acceptee</span>
+                    <span className="font-medium">Acceptée</span>
                   </button>
                   <button onClick={() => handleDropSelect('rejected')} className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 cursor-pointer transition-colors">
                     <Icon.X size={18} className="text-red-500" />
-                    <span className="font-medium">Refusee</span>
+                    <span className="font-medium">Refusée</span>
                   </button>
                 </>
               )}
@@ -1071,7 +1071,7 @@ export default function ApplicationsPage() {
                 <Icon.Trash size={20} className="text-red-500" />
               </div>
               <h3 className="text-lg font-bold mb-2">Supprimer la candidature ?</h3>
-              <p className="text-gray-500 text-sm mb-6">Cette action est irreversible.</p>
+              <p className="text-gray-500 text-sm mb-6">Cette action est irréversible.</p>
               <div className="flex gap-3 justify-center">
                 <Button variant="secondary" onClick={() => setDeleteConfirm(null)}>Annuler</Button>
                 <Button className="!bg-red-500 hover:!bg-red-600 !shadow-none" onClick={() => handleDelete(deleteConfirm)} icon={<Icon.Trash size={16} />}>Supprimer</Button>

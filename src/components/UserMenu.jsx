@@ -9,7 +9,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Icon } from './Icons';
 
-export default function UserMenu() {
+export default function UserMenu({ collapsed = false }) {
   const { profile, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -42,6 +42,9 @@ export default function UserMenu() {
 
   // Skeleton de chargement si le profil n'est pas encore chargé
   if (!profile) {
+    if (collapsed) {
+      return <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />;
+    }
     return (
       <div className="bg-gray-50 rounded-[14px] p-4 flex items-center gap-3 animate-pulse">
         <div className="w-[42px] h-[42px] rounded-full bg-gray-200 shrink-0" />
@@ -50,6 +53,19 @@ export default function UserMenu() {
           <div className="h-3 bg-gray-200 rounded-md w-20" />
         </div>
       </div>
+    );
+  }
+
+  // Collapsed: avatar only
+  if (collapsed) {
+    return (
+      <button
+        onClick={() => setMenuOpen(!menuOpen)}
+        className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-600 flex items-center justify-center text-white font-semibold text-[13px] shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all"
+        title={displayName}
+      >
+        {initials}
+      </button>
     );
   }
 

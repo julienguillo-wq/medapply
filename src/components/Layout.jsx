@@ -5,19 +5,19 @@ import { useAuth } from '../contexts/AuthContext';
 import { Icon } from './Icons';
 
 export default function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { signOut } = useAuth();
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
 
-      <div className="flex-1 md:ml-[260px] flex flex-col min-h-screen">
+      <div className="flex-1 md:ml-16 flex flex-col min-h-screen transition-[margin] duration-200">
         {/* Mobile Header */}
         <header className="md:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setSidebarOpen(true)}
+              onClick={() => setMobileOpen(true)}
               className="p-2 -ml-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -32,7 +32,6 @@ export default function Layout() {
             </div>
           </div>
 
-          {/* Bouton déconnexion mobile */}
           <button
             onClick={signOut}
             className="p-2 -mr-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
