@@ -159,6 +159,7 @@ export default function useSiwfData() {
     allSpecialties,
     selectedCantons,
     selectedSpecialties,
+    setSelectedSpecialties,
     searchQuery,
     setSearchQuery,
     setSelectedCantons,

@@ -18,6 +18,7 @@ export default function SearchPage() {
     selectedCantons,
     setSelectedCantons,
     selectedSpecialties,
+    setSelectedSpecialties,
     searchQuery,
     setSearchQuery,
     toggleCanton,
@@ -35,14 +36,23 @@ export default function SearchPage() {
   } = useSiwfData();
 
   const preferredCantons = profile?.preferred_cantons || [];
-  const hasPreferred = preferredCantons.length > 0;
+  const hasPreferredCantons = preferredCantons.length > 0;
+  const preferredSpecialties = profile?.preferred_specialties || [];
+  const hasPreferredSpecs = preferredSpecialties.length > 0;
 
   // Check if current selection matches preferred cantons exactly
-  const isPreferredActive = useMemo(() => {
-    if (!hasPreferred) return false;
+  const isPreferredCantonsActive = useMemo(() => {
+    if (!hasPreferredCantons) return false;
     if (selectedCantons.length !== preferredCantons.length) return false;
     return preferredCantons.every(c => selectedCantons.includes(c));
-  }, [selectedCantons, preferredCantons, hasPreferred]);
+  }, [selectedCantons, preferredCantons, hasPreferredCantons]);
+
+  // Check if current selection matches preferred specialties exactly
+  const isPreferredSpecsActive = useMemo(() => {
+    if (!hasPreferredSpecs) return false;
+    if (selectedSpecialties.length !== preferredSpecialties.length) return false;
+    return preferredSpecialties.every(s => selectedSpecialties.includes(s));
+  }, [selectedSpecialties, preferredSpecialties, hasPreferredSpecs]);
 
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -135,13 +145,13 @@ export default function SearchPage() {
           </div>
           <div className="flex items-center gap-2 mb-5">
             <button
-              onClick={() => hasPreferred && setSelectedCantons([...preferredCantons])}
-              disabled={!hasPreferred}
-              title={hasPreferred ? 'Sélectionner mes cantons préférés' : 'Définissez vos cantons dans votre Profil'}
+              onClick={() => hasPreferredCantons && setSelectedCantons([...preferredCantons])}
+              disabled={!hasPreferredCantons}
+              title={hasPreferredCantons ? 'Sélectionner mes cantons préférés' : 'Définissez vos cantons dans votre Profil'}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all cursor-pointer ${
-                !hasPreferred
+                !hasPreferredCantons
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : isPreferredActive
+                  : isPreferredCantonsActive
                     ? 'bg-primary text-white'
                     : 'bg-primary/10 text-primary hover:bg-primary/20 border border-primary/30'
               }`}
@@ -183,9 +193,36 @@ export default function SearchPage() {
         {/* Sidebar */}
         <div>
           <Card className="mb-5">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">
-              Spécialités {!loading && `(${allSpecialties.length})`}
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Spécialités {!loading && `(${allSpecialties.length})`}
+              </h3>
+              {selectedSpecialties.length > 0 && (
+                <button
+                  onClick={() => setSelectedSpecialties([])}
+                  className="text-[11px] text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  Effacer
+                </button>
+              )}
+            </div>
+            <div className="mb-4">
+              <button
+                onClick={() => hasPreferredSpecs && setSelectedSpecialties([...preferredSpecialties])}
+                disabled={!hasPreferredSpecs}
+                title={hasPreferredSpecs ? 'Sélectionner mes spécialités préférées' : 'Définissez vos spécialités dans votre Profil'}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all cursor-pointer w-full justify-center ${
+                  !hasPreferredSpecs
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : isPreferredSpecsActive
+                      ? 'bg-primary text-white'
+                      : 'bg-primary/10 text-primary hover:bg-primary/20 border border-primary/30'
+                }`}
+              >
+                <span>{'\u2B50'}</span>
+                Mes spécialités préférées
+              </button>
+            </div>
             {loading ? (
               <div className="flex flex-col gap-2">
                 {Array.from({ length: 6 }).map((_, i) => (

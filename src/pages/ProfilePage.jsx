@@ -4,6 +4,7 @@ import Button from '../components/Button';
 import { Icon } from '../components/Icons';
 import { useAuth } from '../contexts/AuthContext';
 import { getEmailConfig, saveEmailConfig, testSmtpConnection } from '../services/emailConfigService';
+import { loadSpecialties } from '../services/siwfService';
 
 const CANTON_LANGUAGE_GROUPS = [
   {
@@ -196,6 +197,49 @@ export default function ProfilePage() {
     }
     setCantonsSaving(false);
   };
+
+  // Specialty preferences state
+  const [allSpecialties, setAllSpecialties] = useState([]);
+  const [preferredSpecialties, setPreferredSpecialties] = useState([]);
+  const [specialtiesSaving, setSpecialtiesSaving] = useState(false);
+  const [specialtiesMessage, setSpecialtiesMessage] = useState(null);
+  const [specSearch, setSpecSearch] = useState('');
+
+  // Load SIWF specialties list
+  useEffect(() => {
+    loadSpecialties().then(setAllSpecialties).catch(() => {});
+  }, []);
+
+  // Load preferred specialties from profile (+ auto-include main specialty)
+  useEffect(() => {
+    if (authProfile?.preferred_specialties?.length > 0) {
+      setPreferredSpecialties(authProfile.preferred_specialties);
+    } else if (authProfile?.specialty) {
+      setPreferredSpecialties([authProfile.specialty]);
+    }
+  }, [authProfile]);
+
+  const togglePreferredSpecialty = (name) => {
+    setPreferredSpecialties(prev =>
+      prev.includes(name) ? prev.filter(s => s !== name) : [...prev, name]
+    );
+  };
+
+  const saveSpecialties = async () => {
+    setSpecialtiesSaving(true);
+    setSpecialtiesMessage(null);
+    const { error } = await updateProfile({ preferred_specialties: preferredSpecialties });
+    if (error) {
+      setSpecialtiesMessage({ type: 'error', text: 'Erreur lors de la sauvegarde.' });
+    } else {
+      setSpecialtiesMessage({ type: 'success', text: 'Spécialités préférées sauvegardées.' });
+    }
+    setSpecialtiesSaving(false);
+  };
+
+  const filteredSpecialties = specSearch.trim()
+    ? allSpecialties.filter(s => s.name.toLowerCase().includes(specSearch.trim().toLowerCase()))
+    : allSpecialties;
 
   // Email SMTP config state
   const [smtpEmail, setSmtpEmail] = useState('');
@@ -589,6 +633,96 @@ export default function ProfilePage() {
               icon={<Icon.Save size={16} />}
             >
               {cantonsSaving ? 'Sauvegarde...' : 'Sauvegarder les cantons'}
+            </Button>
+          </div>
+        </Card>
+      </div>
+
+      {/* Specialty Preferences */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold tracking-tight mb-2">Spécialités préférées</h2>
+        <p className="text-gray-500 text-[15px] mb-5">
+          Sélectionnez les spécialités qui vous intéressent pour filtrer rapidement dans la recherche.
+        </p>
+
+        <Card>
+          <div className="mb-4">
+            <div className="relative">
+              <Icon.Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                value={specSearch}
+                onChange={(e) => setSpecSearch(e.target.value)}
+                placeholder="Rechercher une spécialité..."
+                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary transition-colors"
+              />
+              {specSearch && (
+                <button
+                  onClick={() => setSpecSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  <Icon.X size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[360px] overflow-y-auto">
+            {filteredSpecialties.map((spec) => {
+              const selected = preferredSpecialties.includes(spec.name);
+              const isMain = authProfile?.specialty === spec.name;
+              return (
+                <button
+                  key={spec.id}
+                  onClick={() => togglePreferredSpecialty(spec.name)}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-[13px] font-medium text-left transition-all cursor-pointer ${
+                    selected
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
+                    selected ? 'border-white bg-white/20' : 'border-gray-300'
+                  }`}>
+                    {selected && <Icon.Check size={10} />}
+                  </span>
+                  <span className="truncate">{spec.name}</span>
+                  {isMain && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${
+                      selected ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                    }`}>
+                      principale
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {preferredSpecialties.length > 0 && (
+            <div className="mt-5 text-[13px] text-gray-500">
+              {preferredSpecialties.length} spécialité{preferredSpecialties.length > 1 ? 's' : ''} sélectionnée{preferredSpecialties.length > 1 ? 's' : ''}
+            </div>
+          )}
+
+          {specialtiesMessage && (
+            <div className={`mt-4 p-3 rounded-xl text-sm flex items-center gap-2 ${
+              specialtiesMessage.type === 'success'
+                ? 'bg-green-50 text-green-700 border border-green-100'
+                : 'bg-red-50 text-red-700 border border-red-100'
+            }`}>
+              {specialtiesMessage.type === 'success' ? <Icon.Check size={16} /> : <Icon.X size={16} />}
+              {specialtiesMessage.text}
+            </div>
+          )}
+
+          <div className="mt-5">
+            <Button
+              onClick={saveSpecialties}
+              disabled={specialtiesSaving}
+              icon={<Icon.Save size={16} />}
+            >
+              {specialtiesSaving ? 'Sauvegarde...' : 'Sauvegarder les spécialités'}
             </Button>
           </div>
         </Card>
