@@ -100,6 +100,45 @@ async function getUserSendContext(supabase, userId) {
   return { emailConfig, attachments, userProfile, userName };
 }
 
+function escapeHtml(text) {
+  return (text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
+ * Construit le HTML du mail : paragraphes + tableau contact.
+ * Supprime le bloc contact textuel (après "Médecin assistante")
+ * et le remplace par un <table> que Gmail ne collapse pas.
+ */
+function buildMailHtml(bodyText, userName, userProfile) {
+  // Séparer le bloc contact du corps de la lettre
+  let letterBody = bodyText;
+  const lastSep = bodyText.lastIndexOf('\n\n');
+  if (lastSep !== -1) {
+    const tail = bodyText.substring(lastSep + 2);
+    if (/Médecin assistante|Tél\s*:/i.test(tail)) {
+      letterBody = bodyText.substring(0, lastSep);
+    }
+  }
+
+  const escaped = escapeHtml(letterBody);
+  const paragraphs = escaped.split(/\n\n+/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+
+  const phone = userProfile?.phone;
+  const email = userProfile?.email;
+
+  const contactTable = `<table cellpadding="0" cellspacing="0" style="margin-top:20px;border-top:1px solid #cccccc;padding-top:12px;">
+  <tr><td style="font-size:14px;font-weight:bold;">${escapeHtml(userName)}</td></tr>
+  <tr><td style="font-size:13px;color:#555;">Médecin assistante</td></tr>
+  ${phone ? `<tr><td style="font-size:13px;color:#555;">Tél : ${escapeHtml(phone)}</td></tr>` : ''}
+  ${email ? `<tr><td style="font-size:13px;"><a href="mailto:${escapeHtml(email)}" style="color:#1a73e8;">${escapeHtml(email)}</a></td></tr>` : ''}
+</table>`;
+
+  return `<div>${paragraphs}${contactTable}</div>`;
+}
+
 /**
  * Génère la lettre de motivation (template fixe, pas d'appel API).
  */
@@ -218,9 +257,8 @@ app.post('/api/send-application', async (req, res) => {
 
   try {
     const supabase = getSupabaseClient(accessToken);
-    const { emailConfig, attachments } = await getUserSendContext(supabase, userId);
+    const { emailConfig, attachments, userProfile } = await getUserSendContext(supabase, userId);
 
-    // Créer le transporteur SMTP
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
@@ -231,15 +269,7 @@ app.post('/api/send-application', async (req, res) => {
       },
     });
 
-    // Envoyer l'email — HTML uniquement, enveloppé dans un <div>
-    // avec un <p> invisible à la fin pour empêcher Gmail de
-    // détecter le bloc contact comme une signature
-    const escaped = body
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    const paragraphs = escaped.split(/\n\n+/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
-    const htmlBody = `<div>${paragraphs}<p style="font-size:1px;color:transparent;">.</p></div>`;
+    const htmlBody = buildMailHtml(body, userName, userProfile);
 
     const mailOptions = {
       from: `${userName || emailConfig.email_address} <${emailConfig.email_address}>`,
@@ -434,7 +464,7 @@ app.post('/api/campaigns/:id/send-next', async (req, res) => {
     }
 
     // Récupérer le contexte d'envoi
-    const { emailConfig, attachments, userName } = await getUserSendContext(supabase, campaign.user_id);
+    const { emailConfig, attachments, userName, userProfile } = await getUserSendContext(supabase, campaign.user_id);
 
     // Récupérer les prochains items 'ready'
     const { data: readyItems, error: itemsError } = await admin
@@ -511,12 +541,7 @@ app.post('/api/campaigns/:id/send-next', async (req, res) => {
       try {
         const subject = `Candidature spontanée - ${item.specialty || userSpecialty || 'Médecine'} - ${userName}`;
 
-        const escaped = item.motivation_letter
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;');
-        const paragraphs = escaped.split(/\n\n+/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
-        const letterHtml = `<div>${paragraphs}<p style="font-size:1px;color:transparent;">.</p></div>`;
+        const letterHtml = buildMailHtml(item.motivation_letter, userName, userProfile);
 
         const mailOptions = {
           from: `${userName} <${emailConfig.email_address}>`,
