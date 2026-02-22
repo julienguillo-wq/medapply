@@ -231,20 +231,21 @@ app.post('/api/send-application', async (req, res) => {
       },
     });
 
-    // Envoyer l'email — HTML avec <br> pour éviter que Gmail
-    // reformatte le bloc contact en blockquote/signature
-    const htmlBody = body
+    // Envoyer l'email — HTML uniquement, enveloppé dans un <div>
+    // avec un <p> invisible à la fin pour empêcher Gmail de
+    // détecter le bloc contact comme une signature
+    const escaped = body
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/\n/g, '<br>');
+      .replace(/>/g, '&gt;');
+    const paragraphs = escaped.split(/\n\n+/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+    const htmlBody = `<div>${paragraphs}<p style="font-size:1px;color:transparent;">.</p></div>`;
 
     const mailOptions = {
       from: `${userName || emailConfig.email_address} <${emailConfig.email_address}>`,
       to,
       replyTo: emailConfig.email_address,
       subject,
-      text: body,
       html: htmlBody,
       attachments,
     };
@@ -510,18 +511,18 @@ app.post('/api/campaigns/:id/send-next', async (req, res) => {
       try {
         const subject = `Candidature spontanée - ${item.specialty || userSpecialty || 'Médecine'} - ${userName}`;
 
-        const letterHtml = item.motivation_letter
+        const escaped = item.motivation_letter
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/\n/g, '<br>');
+          .replace(/>/g, '&gt;');
+        const paragraphs = escaped.split(/\n\n+/).map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+        const letterHtml = `<div>${paragraphs}<p style="font-size:1px;color:transparent;">.</p></div>`;
 
         const mailOptions = {
           from: `${userName} <${emailConfig.email_address}>`,
           to: item.director_email,
           replyTo: emailConfig.email_address,
           subject,
-          text: item.motivation_letter,
           html: letterHtml,
           attachments,
         };
