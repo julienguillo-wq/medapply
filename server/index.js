@@ -379,6 +379,52 @@ async function sendCampaignBatch(campaignId, options = {}) {
           }, { onConflict: 'establishment_id' });
       } catch { /* ignore */ }
 
+      // Créer la candidature correspondante (doublon = même user + même email)
+      try {
+        const { data: existingCand } = await admin
+          .from('candidatures')
+          .select('id')
+          .eq('user_id', campaign.user_id)
+          .eq('director_email', item.director_email)
+          .eq('establishment_id', item.establishment_id)
+          .maybeSingle();
+
+        if (!existingCand) {
+          const now = new Date().toISOString();
+          // Lookup Gmail threadId si possible
+          let gmailThreadId = null;
+          let gmailMessageId = null;
+          try {
+            const gmailResult = await lookupGmailThreadId(campaign.user_id, item.director_email, subject);
+            if (gmailResult) {
+              gmailThreadId = gmailResult.threadId;
+              gmailMessageId = gmailResult.messageId;
+            }
+          } catch { /* ignore */ }
+
+          await admin
+            .from('candidatures')
+            .insert({
+              user_id: campaign.user_id,
+              establishment_id: item.establishment_id,
+              establishment_name: item.establishment_name,
+              establishment_city: item.establishment_city || '',
+              establishment_canton: item.establishment_canton || '',
+              director_name: item.director_name || '',
+              director_email: item.director_email,
+              specialty: item.specialty || '',
+              status: 'sent',
+              motivation_letter: item.motivation_letter || '',
+              sent_at: now,
+              gmail_thread_id: gmailThreadId,
+              gmail_message_id: gmailMessageId,
+            });
+          console.log(`[${source}] Candidature créée pour ${item.establishment_name}`);
+        }
+      } catch (candErr) {
+        console.warn(`[${source}] Candidature creation failed for ${item.establishment_name}:`, candErr.message);
+      }
+
       sentCount++;
       results.push({ id: item.id, status: 'sent' });
     } catch (sendErr) {
@@ -872,6 +918,8 @@ app.post('/api/campaigns/create', async (req, res) => {
       campaign_id: campaign.id,
       establishment_id: item.establishmentId,
       establishment_name: item.establishmentName,
+      establishment_city: item.establishmentCity || '',
+      establishment_canton: item.establishmentCanton || '',
       director_name: item.directorName || null,
       director_email: item.directorEmail || null,
       specialty: item.specialty || null,
@@ -976,6 +1024,98 @@ app.get('/api/campaigns/:id', async (req, res) => {
     return res.json({ campaign: { ...campaign, items: items || [] } });
   } catch (err) {
     console.error('[campaigns/:id] Erreur:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// POST /api/sync-campaigns
+// Rattrapage : crée les candidatures manquantes pour les
+// campaign_items déjà envoyés
+// ============================================================
+app.post('/api/sync-campaigns', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token d\'authentification requis' });
+  }
+
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: 'userId requis' });
+
+  const admin = getSupabaseAdmin();
+
+  try {
+    // Récupérer tous les campaign_items envoyés pour cet utilisateur
+    const { data: campaigns } = await admin
+      .from('campaigns')
+      .select('id')
+      .eq('user_id', userId);
+
+    if (!campaigns || campaigns.length === 0) {
+      return res.json({ success: true, created: 0, skipped: 0 });
+    }
+
+    const campaignIds = campaigns.map(c => c.id);
+
+    const { data: sentItems } = await admin
+      .from('campaign_items')
+      .select('*')
+      .in('campaign_id', campaignIds)
+      .eq('item_status', 'sent');
+
+    if (!sentItems || sentItems.length === 0) {
+      return res.json({ success: true, created: 0, skipped: 0 });
+    }
+
+    // Récupérer les candidatures existantes pour cet utilisateur
+    const { data: existingCands } = await admin
+      .from('candidatures')
+      .select('establishment_id, director_email')
+      .eq('user_id', userId);
+
+    const existingSet = new Set(
+      (existingCands || []).map(c => `${c.establishment_id}|${c.director_email}`)
+    );
+
+    let created = 0;
+    let skipped = 0;
+
+    for (const item of sentItems) {
+      const key = `${item.establishment_id}|${item.director_email}`;
+      if (existingSet.has(key) || !item.director_email) {
+        skipped++;
+        continue;
+      }
+
+      try {
+        await admin
+          .from('candidatures')
+          .insert({
+            user_id: userId,
+            establishment_id: item.establishment_id,
+            establishment_name: item.establishment_name,
+            establishment_city: item.establishment_city || '',
+            establishment_canton: item.establishment_canton || '',
+            director_name: item.director_name || '',
+            director_email: item.director_email,
+            specialty: item.specialty || '',
+            status: 'sent',
+            motivation_letter: item.motivation_letter || '',
+            sent_at: item.sent_at || item.created_at,
+          });
+
+        existingSet.add(key);
+        created++;
+      } catch (insertErr) {
+        console.warn(`[sync-campaigns] Insert failed for ${item.establishment_name}:`, insertErr.message);
+        skipped++;
+      }
+    }
+
+    console.log(`[sync-campaigns] User ${userId}: ${created} created, ${skipped} skipped`);
+    return res.json({ success: true, created, skipped });
+  } catch (err) {
+    console.error('[sync-campaigns] Error:', err.message);
     return res.status(500).json({ error: err.message });
   }
 });

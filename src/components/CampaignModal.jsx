@@ -57,6 +57,8 @@ export default function CampaignModal({ establishments, onClose, onCreated }) {
       const items = enriched.map(est => ({
         establishmentId: String(est.id),
         establishmentName: est.name,
+        establishmentCity: est.city || '',
+        establishmentCanton: est.canton || '',
         directorName: est.directorClean,
         directorEmail: est.emailInfo.email || '',
         specialty: est.specialty || '',
