@@ -1,17 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
 import { Icon } from '../components/Icons';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { cantonPaths } from '../components/SwitzerlandMap';
 
-const statusConfig = {
-  draft: { label: 'Brouillon', variant: 'default', icon: <Icon.Edit size={12} /> },
-  sent: { label: 'Envoyée', variant: 'warning', icon: <Icon.Clock size={12} /> },
-  replied: { label: 'Réponse', variant: 'success', icon: <Icon.Check size={12} /> },
-  rejected: { label: 'Refusée', variant: 'error', icon: <Icon.X size={12} /> },
-};
+// --- Smart temporal status ---
+function getSmartStatus(candidature) {
+  if (candidature.status === 'replied') return { label: 'Réponse', variant: 'success', icon: <Icon.Check size={12} /> };
+  if (candidature.status === 'rejected') return { label: 'Refusée', variant: 'error', icon: <Icon.X size={12} /> };
+  if (candidature.status === 'draft') return { label: 'Brouillon', variant: 'default', icon: <Icon.Edit size={12} /> };
+
+  const now = new Date();
+  const sentDate = new Date(candidature.sent_at || candidature.created_at);
+  const days = (now - sentDate) / (1000 * 60 * 60 * 24);
+
+  if (days > 14) return { label: 'À relancer', variant: 'error', icon: <Icon.AlertTriangle size={12} /> };
+  if (days > 7) return { label: 'En attente', variant: 'warning', icon: <Icon.Clock size={12} /> };
+  return { label: 'Envoyée', variant: 'success', icon: <Icon.Send size={12} /> };
+}
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -35,17 +45,214 @@ function timeAgo(dateStr) {
   return `Il y a ${days} jours`;
 }
 
+// --- Weekly chart data ---
+function getWeeklyData(candidatures) {
+  const now = new Date();
+  const weeks = [];
+  for (let i = 7; i >= 0; i--) {
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - i * 7);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+
+    const count = candidatures.filter(c => {
+      const date = new Date(c.created_at);
+      return date >= weekStart && date < weekEnd;
+    }).length;
+
+    weeks.push({
+      name: weekStart.toLocaleDateString('fr-CH', { day: '2-digit', month: '2-digit' }),
+      candidatures: count,
+    });
+  }
+  return weeks;
+}
+
+// --- Custom tooltip for chart ---
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-xs shadow-lg">
+      <div className="text-gray-300 mb-0.5">{label}</div>
+      <div className="font-semibold">{payload[0].value} candidature{payload[0].value > 1 ? 's' : ''}</div>
+    </div>
+  );
+}
+
+// --- Profile progress donut ---
+function ProfileProgress({ profile, hasDocuments, hasCandidatures, hasParcours }) {
+  const criteria = [
+    {
+      label: 'Profil rempli',
+      done: !!(profile?.first_name && profile?.last_name && profile?.specialty),
+      to: '/profil',
+    },
+    {
+      label: 'CV complété',
+      done: hasParcours,
+      to: '/parcours',
+    },
+    {
+      label: 'Documents uploadés',
+      done: hasDocuments,
+      to: '/documents',
+    },
+    {
+      label: 'Cantons préférés définis',
+      done: profile?.preferred_cantons?.length > 0,
+      to: '/profil',
+    },
+    {
+      label: 'Première candidature envoyée',
+      done: hasCandidatures,
+      to: '/recherche',
+    },
+  ];
+
+  const completed = criteria.filter(c => c.done).length;
+  const percent = Math.round((completed / criteria.length) * 100);
+  const color = percent >= 80 ? '#10B981' : percent >= 40 ? '#F59E0B' : '#EF4444';
+
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percent / 100) * circumference;
+
+  return (
+    <Card className="h-full">
+      <h3 className="text-sm font-bold mb-4">Complétion du profil</h3>
+      <div className="flex items-center gap-5">
+        <div className="relative shrink-0">
+          <svg width={96} height={96} className="-rotate-90">
+            <circle cx={48} cy={48} r={radius} fill="none" stroke="#e5e7eb" strokeWidth={8} />
+            <circle
+              cx={48} cy={48} r={radius}
+              fill="none" stroke={color} strokeWidth={8}
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+              strokeLinecap="round"
+              style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-lg font-bold" style={{ color }}>{percent}%</span>
+          </div>
+        </div>
+        <div className="flex-1 space-y-1.5">
+          {criteria.map((c, i) => (
+            <Link
+              key={i}
+              to={c.to}
+              className="flex items-center gap-2 text-[13px] hover:text-primary transition-colors"
+            >
+              <span className="text-sm">{c.done ? '✅' : '⬜'}</span>
+              <span className={c.done ? 'text-gray-400 line-through' : 'text-gray-700'}>{c.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// --- Mini Switzerland Map ---
+function MiniSwitzerlandMap({ candidatureCantons, preferredCantons }) {
+  return (
+    <Card className="h-full flex flex-col">
+      <h3 className="text-sm font-bold mb-3">Couverture géographique</h3>
+      <div className="flex-1 flex items-center justify-center">
+        <svg viewBox="0 0 460 440" className="w-full max-w-[300px] h-auto">
+          <defs>
+            <linearGradient id="appliedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#0066FF" />
+              <stop offset="100%" stopColor="#0052CC" />
+            </linearGradient>
+          </defs>
+          {Object.entries(cantonPaths).map(([id, path]) => {
+            const hasApplied = candidatureCantons.includes(id);
+            const isPreferred = preferredCantons.includes(id);
+
+            let fill = '#e5e5e5';
+            let textFill = '#737373';
+            if (hasApplied) {
+              fill = 'url(#appliedGrad)';
+              textFill = 'white';
+            } else if (isPreferred) {
+              fill = '#b3d4ff';
+              textFill = '#0052CC';
+            }
+
+            return (
+              <g key={id}>
+                <path d={path.d} fill={fill} stroke="#fff" strokeWidth={1} />
+                <text
+                  x={path.cx} y={path.cy}
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontSize="9" fontWeight="600"
+                  fill={textFill}
+                  style={{ pointerEvents: 'none' }}
+                >
+                  {id}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+      <div className="flex items-center justify-center gap-4 mt-3 text-[11px] text-gray-500">
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#0066FF] inline-block" /> Postulé
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#b3d4ff] inline-block" /> À contacter
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-gray-300 inline-block" /> Non ciblé
+        </span>
+      </div>
+    </Card>
+  );
+}
+
+// --- Motivation message ---
+function MotivationMessage({ sentCount }) {
+  let text, emoji;
+  if (sentCount === 0) {
+    text = 'Prêt à lancer vos candidatures ? Commencez par la page Recherche';
+    emoji = '🚀';
+  } else if (sentCount <= 5) {
+    text = 'Bon début ! Continuez à élargir vos recherches';
+    emoji = '💪';
+  } else if (sentCount <= 15) {
+    text = `Vous avez contacté ${sentCount} établissements, excellent travail !`;
+    emoji = '🎯';
+  } else {
+    text = `Impressionnant ! ${sentCount} candidatures envoyées, les réponses vont arriver`;
+    emoji = '🌟';
+  }
+
+  return (
+    <div className="rounded-2xl bg-gradient-to-r from-blue-50 via-violet-50 to-blue-50 p-6 md:p-8">
+      <p className="text-center text-sm md:text-base text-gray-600 font-medium">
+        {text} {emoji}
+      </p>
+    </div>
+  );
+}
+
+// === Main component ===
 export default function HomePage() {
   const { user, profile } = useAuth();
   const [candidatures, setCandidatures] = useState([]);
   const [documents, setDocuments] = useState([]);
+  const [hasParcours, setHasParcours] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user?.id) return;
 
     async function loadData() {
-      const [candResult, docsResult] = await Promise.all([
+      const [candResult, docsResult, parcoursResult] = await Promise.all([
         supabase
           .from('candidatures')
           .select('*')
@@ -56,10 +263,16 @@ export default function HomePage() {
           .select('id')
           .eq('user_id', user.id)
           .limit(1),
+        supabase
+          .from('parcours_stages')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1),
       ]);
 
       setCandidatures(candResult.data || []);
       setDocuments(docsResult.data || []);
+      setHasParcours((parcoursResult.data || []).length > 0);
       setLoading(false);
     }
 
@@ -71,6 +284,16 @@ export default function HomePage() {
   const pending = candidatures.filter(c => c.status === 'sent');
   const replied = candidatures.filter(c => c.status === 'replied' || c.status === 'rejected');
   const responseRate = sent.length > 0 ? Math.round((replied.length / sent.length) * 100) : 0;
+
+  // --- Chart data ---
+  const weeklyData = useMemo(() => getWeeklyData(candidatures), [candidatures]);
+
+  // --- Canton data for mini map ---
+  const candidatureCantons = useMemo(
+    () => [...new Set(candidatures.filter(c => c.establishment_canton).map(c => c.establishment_canton))],
+    [candidatures]
+  );
+  const preferredCantons = profile?.preferred_cantons || [];
 
   // --- Recommendations ---
   const recommendations = [];
@@ -110,7 +333,6 @@ export default function HomePage() {
     });
   }
 
-  // Candidatures > 14 jours sans réponse
   const now = new Date();
   const stale = candidatures.filter(c => {
     if (c.status !== 'sent') return false;
@@ -163,25 +385,80 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* Section 1: Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
-        {[
-          { label: 'Candidatures envoyées', value: sent.length, color: 'text-primary', bg: 'bg-primary-bg', icon: <Icon.Send size={20} /> },
-          { label: 'En attente', value: pending.length, color: 'text-amber-700', bg: 'bg-warning-bg', icon: <Icon.Clock size={20} /> },
-          { label: 'Réponses reçues', value: replied.length, color: 'text-emerald-700', bg: 'bg-success-bg', icon: <Icon.Check size={20} /> },
-          { label: 'Taux de réponse', value: `${responseRate}%`, color: 'text-violet-700', bg: 'bg-violet-50', icon: <Icon.Activity size={20} /> },
-        ].map((stat, i) => (
-          <Card key={i} className={`animate-slide delay-${i + 1}`}>
-            <div className={`w-10 h-10 ${stat.bg} rounded-xl flex items-center justify-center mb-3 ${stat.color}`}>
-              {stat.icon}
-            </div>
-            <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">{stat.label}</div>
-            <div className={`text-[28px] font-bold ${stat.color}`}>{loading ? '—' : stat.value}</div>
-          </Card>
-        ))}
+      {/* Ligne 1: Stats (4 cartes) + Cercle de progression */}
+      <div className="flex flex-col lg:flex-row gap-4 mb-8">
+        <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          {[
+            { label: 'Candidatures envoyées', value: sent.length, color: 'text-primary', bg: 'bg-primary-bg', icon: <Icon.Send size={20} /> },
+            { label: 'En attente', value: pending.length, color: 'text-amber-700', bg: 'bg-warning-bg', icon: <Icon.Clock size={20} /> },
+            { label: 'Réponses reçues', value: replied.length, color: 'text-emerald-700', bg: 'bg-success-bg', icon: <Icon.Check size={20} /> },
+            { label: 'Taux de réponse', value: `${responseRate}%`, color: 'text-violet-700', bg: 'bg-violet-50', icon: <Icon.Activity size={20} /> },
+          ].map((stat, i) => (
+            <Card key={i} className={`animate-slide delay-${i + 1}`}>
+              <div className={`w-10 h-10 ${stat.bg} rounded-xl flex items-center justify-center mb-3 ${stat.color}`}>
+                {stat.icon}
+              </div>
+              <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">{stat.label}</div>
+              <div className={`text-[28px] font-bold ${stat.color}`}>{loading ? '—' : stat.value}</div>
+            </Card>
+          ))}
+        </div>
+        <div className="lg:w-[320px] shrink-0">
+          <ProfileProgress
+            profile={profile}
+            hasDocuments={documents.length > 0}
+            hasCandidatures={candidatures.some(c => c.status !== 'draft')}
+            hasParcours={hasParcours}
+          />
+        </div>
       </div>
 
-      {/* Section 2: Recommendations */}
+      {/* Ligne 2: Graphique + Mini carte */}
+      <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 mb-8">
+        <Card>
+          <h3 className="text-sm font-bold mb-4">Activité des candidatures</h3>
+          <div className="h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={weeklyData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0066FF" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#0066FF" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: '#9ca3af' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 11, fill: '#9ca3af' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip content={<ChartTooltip />} />
+                <Area
+                  type="monotone"
+                  dataKey="candidatures"
+                  stroke="#0066FF"
+                  strokeWidth={2.5}
+                  fill="url(#chartGradient)"
+                  dot={{ r: 4, fill: '#0066FF', strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 6, fill: '#0066FF', strokeWidth: 2, stroke: '#fff' }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+        <MiniSwitzerlandMap
+          candidatureCantons={candidatureCantons}
+          preferredCantons={preferredCantons}
+        />
+      </div>
+
+      {/* Ligne 3: Recommendations */}
       {!loading && recommendations.length > 0 && (
         <div className="mb-8">
           <h2 className="text-lg font-bold mb-4">Actions recommandées</h2>
@@ -204,7 +481,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Section 3: Recent candidatures table */}
+      {/* Ligne 4: Recent candidatures table */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">Dernières candidatures</h2>
@@ -242,7 +519,7 @@ export default function HomePage() {
                 <div>Statut</div>
               </div>
               {recent5.map((cand, i) => {
-                const status = statusConfig[cand.status] || statusConfig.draft;
+                const status = getSmartStatus(cand);
                 return (
                   <div
                     key={cand.id}
@@ -267,7 +544,7 @@ export default function HomePage() {
             {/* Mobile cards */}
             <div className="flex flex-col gap-3 md:hidden">
               {recent5.map((cand) => {
-                const status = statusConfig[cand.status] || statusConfig.draft;
+                const status = getSmartStatus(cand);
                 return (
                   <Card key={cand.id}>
                     <div className="flex justify-between items-start mb-2">
@@ -286,9 +563,9 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* Section 4: Activity timeline */}
+      {/* Ligne 5: Activity timeline */}
       {!loading && activities.length > 0 && (
-        <div>
+        <div className="mb-8">
           <h2 className="text-lg font-bold mb-4">Activité récente</h2>
           <Card className="!p-0">
             {activities.map((activity, i) => (
@@ -309,6 +586,11 @@ export default function HomePage() {
             ))}
           </Card>
         </div>
+      )}
+
+      {/* Ligne 6: Motivation message */}
+      {!loading && (
+        <MotivationMessage sentCount={sent.length} />
       )}
     </div>
   );

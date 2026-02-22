@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const cantonPaths = {
+export const cantonPaths = {
   'ZH': { d: 'M280,95 L310,85 L340,95 L345,120 L330,145 L295,150 L270,135 L265,110 Z', cx: 305, cy: 115 },
   'BE': { d: 'M120,150 L180,130 L220,145 L240,180 L230,230 L200,260 L150,270 L100,240 L90,200 L100,160 Z', cx: 165, cy: 195 },
   'VD': { d: 'M50,220 L100,200 L130,220 L140,270 L120,310 L70,320 L30,290 L25,250 Z', cx: 85, cy: 265 },
