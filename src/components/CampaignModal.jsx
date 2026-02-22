@@ -15,7 +15,8 @@ export default function CampaignModal({ establishments, onClose, onCreated }) {
   const navigate = useNavigate();
 
   const [excludedIds, setExcludedIds] = useState(new Set());
-  const [sendPerDay, setSendPerDay] = useState(4);
+  const [sendPerDay, setSendPerDay] = useState(5);
+  const [sendHour, setSendHour] = useState('08:00');
   const [campaignName, setCampaignName] = useState(
     `Campagne ${new Date().toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' })}`
   );
@@ -67,6 +68,7 @@ export default function CampaignModal({ establishments, onClose, onCreated }) {
       await createCampaign({
         name: campaignName,
         sendPerDay,
+        sendHour,
         items,
         userId: user.id,
       });
@@ -116,35 +118,52 @@ export default function CampaignModal({ establishments, onClose, onCreated }) {
           />
         </div>
 
-        {/* Send rate */}
+        {/* Send rate slider */}
         <div className="mb-5">
-          <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Envois par jour</label>
-          <div className="flex items-center gap-2">
-            {[2, 3, 4, 5].map(n => (
-              <button
-                key={n}
-                onClick={() => setSendPerDay(n)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
-                  sendPerDay === n
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
+          <label className="text-sm font-semibold text-gray-700 mb-3 block">Envois par jour</label>
+          <div className="flex items-center gap-4">
+            <input
+              type="range"
+              min={2}
+              max={10}
+              value={sendPerDay}
+              onChange={(e) => setSendPerDay(Number(e.target.value))}
+              className="flex-1 h-2 rounded-full appearance-none cursor-pointer accent-primary bg-gray-200"
+            />
+            <span className="text-2xl font-[800] text-primary w-10 text-center shrink-0">{sendPerDay}</span>
           </div>
+          <p className={`text-[13px] mt-2 ${
+            sendPerDay <= 5 ? 'text-emerald-600' : sendPerDay <= 8 ? 'text-amber-600' : 'text-red-600'
+          }`}>
+            {sendPerDay <= 5
+              ? '\u{1F7E2} Rythme sûr — aucun risque pour votre compte'
+              : sendPerDay <= 8
+                ? '\u{1F7E1} Rythme modéré — recommandé pour les comptes actifs'
+                : '\u{1F534} Rythme élevé — surveillez votre boîte d\u2019envoi'}
+          </p>
+          <p className="text-[12px] text-gray-400 mt-1">
+            {enriched.length} candidature{enriched.length > 1 ? 's' : ''} restante{enriched.length > 1 ? 's' : ''} — envoi terminé dans ~{daysEstimate} jour{daysEstimate > 1 ? 's' : ''}
+          </p>
         </div>
 
-        {/* Estimation */}
-        <div className="p-4 bg-gray-50 rounded-xl mb-5">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">
-              <span className="font-semibold text-gray-800">{enriched.length}</span> candidature{enriched.length > 1 ? 's' : ''} seront envoyées en{' '}
-              <span className="font-semibold text-gray-800">{daysEstimate}</span> jour{daysEstimate > 1 ? 's' : ''}
-            </span>
-            <Badge variant="primary">{sendPerDay}/jour</Badge>
-          </div>
+        {/* Send hour */}
+        <div className="mb-5">
+          <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Heure d&apos;envoi quotidien</label>
+          <select
+            value={sendHour}
+            onChange={(e) => setSendHour(e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary transition-colors cursor-pointer bg-white"
+          >
+            {Array.from({ length: 23 }, (_, i) => {
+              const h = 7 + Math.floor(i / 2);
+              const m = i % 2 === 0 ? '00' : '30';
+              const val = `${String(h).padStart(2, '0')}:${m}`;
+              return <option key={val} value={val}>{val}</option>;
+            })}
+          </select>
+          <p className="text-[12px] text-gray-400 mt-1.5">
+            Les mails envoyés entre 8h et 10h ont le meilleur taux d&apos;ouverture
+          </p>
         </div>
 
         {/* Warnings */}

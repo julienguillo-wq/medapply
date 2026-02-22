@@ -492,22 +492,28 @@ async function sendCampaignBatch(campaignId, options = {}) {
 }
 
 // ============================================================
-// Cron job — Envoi automatique quotidien à 8h00
+// Cron job — Envoi automatique toutes les 30 min (7h-18h)
+// Vérifie l'heure configurée de chaque campagne (send_hour)
 // ============================================================
 
 const cronLog = []; // Historique des exécutions du cron (en mémoire)
 
-cron.schedule('0 8 * * *', async () => {
+cron.schedule('0,30 7-18 * * *', async () => {
   const timestamp = new Date().toISOString();
-  console.log(`\n[cron] ========== Envoi automatique déclenché à ${timestamp} ==========`);
+
+  // Heure actuelle en Europe/Zurich (HH:MM arrondie à la demi-heure)
+  const nowZurich = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Zurich' });
+  const [, timePart] = nowZurich.split(' ');
+  const [hh, mm] = timePart.split(':');
+  const currentSlot = `${hh}:${Number(mm) < 30 ? '00' : '30'}`;
 
   const admin = getSupabaseAdmin();
 
   try {
-    // Trouver toutes les campagnes actives (in_progress ou draft) avec des items restants
+    // Trouver les campagnes actives dont l'heure d'envoi correspond au créneau actuel
     const { data: campaigns, error } = await admin
       .from('campaigns')
-      .select('id, name, status, send_per_day')
+      .select('id, name, status, send_per_day, send_hour')
       .in('status', ['in_progress', 'draft']);
 
     if (error) {
@@ -516,19 +522,20 @@ cron.schedule('0 8 * * *', async () => {
       return;
     }
 
-    if (!campaigns || campaigns.length === 0) {
-      console.log('[cron] Aucune campagne active trouvée');
-      cronLog.push({ timestamp, campaigns: 0, totalSent: 0, totalFailed: 0 });
-      return;
-    }
+    if (!campaigns || campaigns.length === 0) return;
 
-    console.log(`[cron] ${campaigns.length} campagne(s) active(s) trouvée(s)`);
+    // Filtrer par heure configurée (défaut 08:00)
+    const matching = campaigns.filter(c => (c.send_hour || '08:00') === currentSlot);
+
+    if (matching.length === 0) return;
+
+    console.log(`\n[cron] ========== ${currentSlot} — ${matching.length} campagne(s) à envoyer ==========`);
 
     let totalSent = 0;
     let totalFailed = 0;
     const campaignResults = [];
 
-    for (const campaign of campaigns) {
+    for (const campaign of matching) {
       // Vérifier qu'il reste des items 'ready'
       const { count } = await admin
         .from('campaign_items')
@@ -543,7 +550,7 @@ cron.schedule('0 8 * * *', async () => {
         continue;
       }
 
-      console.log(`[cron] Campagne "${campaign.name}" — ${count} items restants, envoi de max ${campaign.send_per_day}...`);
+      console.log(`[cron] Campagne "${campaign.name}" (${campaign.send_hour || '08:00'}) — ${count} items restants, envoi de max ${campaign.send_per_day}...`);
 
       try {
         const result = await sendCampaignBatch(campaign.id, { source: 'cron' });
@@ -568,9 +575,8 @@ cron.schedule('0 8 * * *', async () => {
       }
     }
 
-    const logEntry = { timestamp, campaigns: campaigns.length, totalSent, totalFailed, details: campaignResults };
+    const logEntry = { timestamp, slot: currentSlot, campaigns: matching.length, totalSent, totalFailed, details: campaignResults };
     cronLog.push(logEntry);
-    // Garder max 100 entrées
     if (cronLog.length > 100) cronLog.shift();
 
     console.log(`[cron] ========== Terminé: ${totalSent} envoyé(s), ${totalFailed} échoué(s) ==========\n`);
@@ -582,7 +588,7 @@ cron.schedule('0 8 * * *', async () => {
   timezone: 'Europe/Zurich',
 });
 
-console.log('[cron] Scheduler actif — envoi automatique quotidien à 08:00 (Europe/Zurich)');
+console.log('[cron] Scheduler actif — vérification toutes les 30 min (7h-18h, Europe/Zurich)');
 
 // ============================================================
 // GET /api/cron/status
@@ -591,7 +597,7 @@ console.log('[cron] Scheduler actif — envoi automatique quotidien à 08:00 (Eu
 app.get('/api/cron/status', (req, res) => {
   res.json({
     active: true,
-    schedule: '0 8 * * * (tous les jours à 08:00)',
+    schedule: '0,30 7-18 * * * (toutes les 30 min, 7h-18h)',
     timezone: 'Europe/Zurich',
     recentRuns: cronLog.slice(-10).reverse(),
   });
@@ -870,7 +876,7 @@ app.post('/api/campaigns/create', async (req, res) => {
   }
 
   const accessToken = authHeader.split(' ')[1];
-  const { name, sendPerDay, items, userId } = req.body;
+  const { name, sendPerDay, sendHour, items, userId } = req.body;
 
   if (!name || !items || !userId) {
     return res.status(400).json({ error: 'Champs requis manquants (name, items, userId)' });
@@ -903,7 +909,8 @@ app.post('/api/campaigns/create', async (req, res) => {
         total_count: items.length,
         sent_count: 0,
         failed_count: 0,
-        send_per_day: sendPerDay || 4,
+        send_per_day: sendPerDay || 5,
+        send_hour: sendHour || '08:00',
       })
       .select()
       .single();

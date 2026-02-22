@@ -14,12 +14,12 @@ async function getAuthHeaders() {
 /**
  * Crée une campagne avec ses items via le backend.
  */
-export async function createCampaign({ name, sendPerDay, items, userId }) {
+export async function createCampaign({ name, sendPerDay, sendHour, items, userId }) {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/campaigns/create`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ name, sendPerDay, items, userId }),
+    body: JSON.stringify({ name, sendPerDay, sendHour, items, userId }),
   });
   const result = await res.json();
   if (!res.ok) throw new Error(result.error || 'Erreur création campagne');
