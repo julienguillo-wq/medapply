@@ -10,6 +10,7 @@ import cors from 'cors';
 import nodemailer from 'nodemailer';
 import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
+import { google } from 'googleapis';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -30,6 +31,91 @@ function getSupabaseClient(accessToken) {
 
 function getSupabaseAdmin() {
   return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+// ============================================================
+// Gmail OAuth2 helpers
+// ============================================================
+
+function createOAuth2Client() {
+  return new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/gmail/callback'
+  );
+}
+
+/**
+ * Charge les tokens Gmail d'un utilisateur, les rafraîchit si expirés,
+ * et retourne un client Gmail prêt à l'emploi.
+ */
+async function getGmailClient(userId) {
+  const admin = getSupabaseAdmin();
+  const { data: tokens, error } = await admin
+    .from('gmail_tokens')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !tokens) return null;
+
+  const oauth2Client = createOAuth2Client();
+  oauth2Client.setCredentials({
+    access_token: tokens.access_token,
+    refresh_token: tokens.refresh_token,
+    expiry_date: new Date(tokens.token_expiry).getTime(),
+  });
+
+  // Auto-refresh si expiré
+  if (new Date(tokens.token_expiry) <= new Date()) {
+    try {
+      const { credentials } = await oauth2Client.refreshAccessToken();
+      oauth2Client.setCredentials(credentials);
+      await admin
+        .from('gmail_tokens')
+        .update({
+          access_token: credentials.access_token,
+          refresh_token: credentials.refresh_token || tokens.refresh_token,
+          token_expiry: new Date(credentials.expiry_date).toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId);
+    } catch (refreshErr) {
+      console.error(`[gmail] Token refresh failed for user ${userId}:`, refreshErr.message);
+      return null;
+    }
+  }
+
+  return google.gmail({ version: 'v1', auth: oauth2Client });
+}
+
+/**
+ * Recherche le threadId Gmail d'un message récemment envoyé via SMTP.
+ * Attend 3s pour laisser Gmail indexer le message.
+ */
+async function lookupGmailThreadId(userId, recipientEmail, subject) {
+  const gmail = await getGmailClient(userId);
+  if (!gmail) return null;
+
+  // Attendre 3s pour laisser Gmail indexer
+  await new Promise(resolve => setTimeout(resolve, 3000));
+
+  try {
+    const query = `to:${recipientEmail} subject:"${subject}" in:sent`;
+    const res = await gmail.users.messages.list({
+      userId: 'me',
+      q: query,
+      maxResults: 1,
+    });
+
+    if (!res.data.messages || res.data.messages.length === 0) return null;
+
+    const msg = res.data.messages[0];
+    return { threadId: msg.threadId, messageId: msg.id };
+  } catch (err) {
+    console.error('[gmail] lookupGmailThreadId error:', err.message);
+    return null;
+  }
 }
 
 // ============================================================
@@ -669,10 +755,26 @@ app.post('/api/send-application', async (req, res) => {
       }
     }
 
+    // Lookup Gmail threadId (async, non-blocking for the response)
+    let gmailThreadId = null;
+    let gmailMessageId = null;
+    try {
+      const gmailResult = await lookupGmailThreadId(userId, to, subject);
+      if (gmailResult) {
+        gmailThreadId = gmailResult.threadId;
+        gmailMessageId = gmailResult.messageId;
+        console.log(`[send-application] Gmail threadId: ${gmailThreadId}`);
+      }
+    } catch (gmailErr) {
+      console.warn('[send-application] Gmail lookup failed:', gmailErr.message);
+    }
+
     return res.json({
       success: true,
       messageId: info.messageId,
       attachmentsCount: attachments.length,
+      gmailThreadId,
+      gmailMessageId,
     });
   } catch (err) {
     console.error('[send-application] Erreur envoi:', err.message);
@@ -877,6 +979,232 @@ app.get('/api/campaigns/:id', async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
+
+// ============================================================
+// Gmail OAuth2 endpoints
+// ============================================================
+
+// GET /api/gmail/auth-url — Génère l'URL d'autorisation Google
+app.get('/api/gmail/auth-url', (req, res) => {
+  const oauth2Client = createOAuth2Client();
+  const url = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    prompt: 'consent',
+    scope: ['https://www.googleapis.com/auth/gmail.readonly'],
+    state: req.query.userId || '',
+  });
+  return res.json({ url });
+});
+
+// GET /api/gmail/callback — Reçoit le code Google, échange contre tokens
+app.get('/api/gmail/callback', async (req, res) => {
+  const { code, state: userId } = req.query;
+
+  if (!code || !userId) {
+    return res.status(400).send('Paramètres manquants');
+  }
+
+  try {
+    const oauth2Client = createOAuth2Client();
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    // Récupérer l'email Gmail
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    const profile = await gmail.users.getProfile({ userId: 'me' });
+    const gmailEmail = profile.data.emailAddress;
+
+    // Stocker les tokens
+    const admin = getSupabaseAdmin();
+    await admin
+      .from('gmail_tokens')
+      .upsert({
+        user_id: userId,
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        token_expiry: new Date(tokens.expiry_date).toISOString(),
+        gmail_email: gmailEmail,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' });
+
+    console.log(`[gmail] Tokens saved for user ${userId} (${gmailEmail})`);
+
+    // Rediriger vers le frontend
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    return res.redirect(`${frontendUrl}/profil?gmail=connected`);
+  } catch (err) {
+    console.error('[gmail/callback] Error:', err.message);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    return res.redirect(`${frontendUrl}/profil?gmail=error`);
+  }
+});
+
+// GET /api/gmail/status — Vérifie si l'utilisateur a des tokens Gmail
+app.get('/api/gmail/status', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token d\'authentification requis' });
+  }
+
+  const userId = req.query.userId;
+  if (!userId) return res.status(400).json({ error: 'userId requis' });
+
+  try {
+    const admin = getSupabaseAdmin();
+    const { data: tokens } = await admin
+      .from('gmail_tokens')
+      .select('gmail_email, token_expiry')
+      .eq('user_id', userId)
+      .single();
+
+    if (!tokens) {
+      return res.json({ connected: false });
+    }
+
+    return res.json({ connected: true, email: tokens.gmail_email });
+  } catch {
+    return res.json({ connected: false });
+  }
+});
+
+// POST /api/gmail/disconnect — Supprime les tokens Gmail
+app.post('/api/gmail/disconnect', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token d\'authentification requis' });
+  }
+
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: 'userId requis' });
+
+  try {
+    const admin = getSupabaseAdmin();
+    await admin.from('gmail_tokens').delete().eq('user_id', userId);
+    console.log(`[gmail] Tokens deleted for user ${userId}`);
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// GET /api/check-replies — Vérifie les réponses Gmail
+// ============================================================
+app.get('/api/check-replies', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token d\'authentification requis' });
+  }
+
+  const userId = req.query.userId;
+  if (!userId) return res.status(400).json({ error: 'userId requis' });
+
+  try {
+    const result = await checkRepliesForUser(userId);
+    return res.json(result);
+  } catch (err) {
+    console.error('[check-replies] Error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Vérifie les réponses Gmail pour un utilisateur donné.
+ * Cherche les threads avec plus d'un message.
+ */
+async function checkRepliesForUser(userId) {
+  const gmail = await getGmailClient(userId);
+  if (!gmail) return { checked: 0, newReplies: [] };
+
+  const admin = getSupabaseAdmin();
+  const { data: candidatures } = await admin
+    .from('candidatures')
+    .select('id, gmail_thread_id, gmail_message_id, status')
+    .eq('user_id', userId)
+    .eq('status', 'sent')
+    .not('gmail_thread_id', 'is', null);
+
+  if (!candidatures || candidatures.length === 0) {
+    return { checked: 0, newReplies: [] };
+  }
+
+  const newReplies = [];
+
+  for (const cand of candidatures) {
+    try {
+      const thread = await gmail.users.threads.get({
+        userId: 'me',
+        id: cand.gmail_thread_id,
+        format: 'metadata',
+        metadataHeaders: ['From', 'Subject'],
+      });
+
+      if (!thread.data.messages || thread.data.messages.length <= 1) continue;
+
+      // Trouver le dernier message qui n'est pas le nôtre
+      const replyMsg = thread.data.messages[thread.data.messages.length - 1];
+      if (replyMsg.id === cand.gmail_message_id) continue;
+
+      const snippet = thread.data.messages[thread.data.messages.length - 1].snippet || '';
+
+      await admin
+        .from('candidatures')
+        .update({
+          status: 'replied',
+          reply_snippet: snippet.substring(0, 500),
+          reply_detected_at: new Date().toISOString(),
+        })
+        .eq('id', cand.id);
+
+      newReplies.push({ candidatureId: cand.id, snippet: snippet.substring(0, 200) });
+    } catch (threadErr) {
+      console.warn(`[check-replies] Thread ${cand.gmail_thread_id} error:`, threadErr.message);
+    }
+  }
+
+  console.log(`[check-replies] User ${userId}: checked ${candidatures.length}, ${newReplies.length} new replies`);
+  return { checked: candidatures.length, newReplies };
+}
+
+// ============================================================
+// Cron job — Vérification des réponses Gmail (toutes les 2h, 7h-20h)
+// ============================================================
+
+cron.schedule('0 7-20/2 * * *', async () => {
+  const timestamp = new Date().toISOString();
+  console.log(`\n[cron/replies] ========== Vérification réponses à ${timestamp} ==========`);
+
+  const admin = getSupabaseAdmin();
+
+  try {
+    const { data: usersWithTokens } = await admin
+      .from('gmail_tokens')
+      .select('user_id');
+
+    if (!usersWithTokens || usersWithTokens.length === 0) {
+      console.log('[cron/replies] Aucun utilisateur avec tokens Gmail');
+      return;
+    }
+
+    let totalReplies = 0;
+    for (const { user_id } of usersWithTokens) {
+      try {
+        const result = await checkRepliesForUser(user_id);
+        totalReplies += result.newReplies.length;
+      } catch (err) {
+        console.error(`[cron/replies] Error for user ${user_id}:`, err.message);
+      }
+    }
+
+    console.log(`[cron/replies] ========== Terminé: ${totalReplies} nouvelle(s) réponse(s) ==========\n`);
+  } catch (err) {
+    console.error('[cron/replies] Erreur générale:', err.message);
+  }
+}, {
+  timezone: 'Europe/Zurich',
+});
+
+console.log('[cron] Scheduler réponses actif — vérification toutes les 2h (7h-20h, Europe/Zurich)');
 
 app.listen(PORT, () => {
   console.log(`[MedApply Server] Démarré sur http://localhost:${PORT}`);

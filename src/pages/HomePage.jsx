@@ -333,6 +333,7 @@ export default function HomePage() {
   const [documents, setDocuments] = useState([]);
   const [hasParcours, setHasParcours] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [recentReplies, setRecentReplies] = useState(0);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -342,9 +343,18 @@ export default function HomePage() {
         supabase.from('documents').select('id').eq('user_id', user.id).limit(1),
         supabase.from('parcours_stages').select('id').eq('user_id', user.id).limit(1),
       ]);
-      setCandidatures(candResult.data || []);
+      const cands = candResult.data || [];
+      setCandidatures(cands);
       setDocuments(docsResult.data || []);
       setHasParcours((parcoursResult.data || []).length > 0);
+
+      // Compter les réponses détectées dans les dernières 24h
+      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+      const recent = cands.filter(c =>
+        c.reply_detected_at && new Date(c.reply_detected_at).getTime() > oneDayAgo
+      ).length;
+      setRecentReplies(recent);
+
       setLoading(false);
     }
     loadData();
@@ -419,6 +429,23 @@ export default function HomePage() {
           Voici un résumé de vos candidatures
         </p>
       </div>
+
+      {/* Bannière réponses reçues */}
+      {!loading && recentReplies > 0 && (
+        <Link
+          to="/candidatures"
+          className="flex items-center gap-3 px-5 py-3.5 mb-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-sm text-emerald-800 hover:bg-emerald-100 transition-colors group"
+        >
+          <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center shrink-0">
+            <Icon.Mail size={16} className="text-white" />
+          </div>
+          <span className="font-semibold flex-1">
+            {recentReplies} nouvelle{recentReplies > 1 ? 's' : ''} réponse{recentReplies > 1 ? 's' : ''} reçue{recentReplies > 1 ? 's' : ''} !
+          </span>
+          <span className="text-emerald-600 text-xs font-medium group-hover:underline">Voir les candidatures</span>
+          <Icon.ChevronRight size={16} className="text-emerald-400" />
+        </Link>
+      )}
 
       {/* Ligne 1: Gradient stats + Profile progress */}
       <div className="flex flex-col lg:flex-row gap-4 mb-8">

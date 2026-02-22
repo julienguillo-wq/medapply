@@ -4,6 +4,7 @@ import Button from '../components/Button';
 import { Icon } from '../components/Icons';
 import { useAuth } from '../contexts/AuthContext';
 import { getEmailConfig, saveEmailConfig, testSmtpConnection } from '../services/emailConfigService';
+import { getGmailAuthUrl, getGmailStatus, disconnectGmail } from '../services/gmailService';
 import { loadSpecialties } from '../services/siwfService';
 
 const CANTON_LANGUAGE_GROUPS = [
@@ -299,6 +300,64 @@ export default function ProfilePage() {
     setSmtpLoading(false);
   }
 
+  // Gmail reply detection state
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [gmailEmail, setGmailEmail] = useState('');
+  const [gmailLoading, setGmailLoading] = useState(false);
+  const [gmailMessage, setGmailMessage] = useState(null);
+
+  // Check Gmail connection status
+  useEffect(() => {
+    if (!user) return;
+    getGmailStatus(user.id).then(({ connected, email }) => {
+      setGmailConnected(connected);
+      if (email) setGmailEmail(email);
+    });
+  }, [user]);
+
+  // Handle ?gmail=connected query param from OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const gmailParam = params.get('gmail');
+    if (gmailParam === 'connected') {
+      setGmailConnected(true);
+      setGmailMessage({ type: 'success', text: 'Gmail connecté avec succès !' });
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+      // Refresh status
+      if (user) getGmailStatus(user.id).then(({ email }) => { if (email) setGmailEmail(email); });
+    } else if (gmailParam === 'error') {
+      setGmailMessage({ type: 'error', text: 'Erreur lors de la connexion Gmail.' });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [user]);
+
+  async function handleConnectGmail() {
+    setGmailLoading(true);
+    setGmailMessage(null);
+    const { url } = await getGmailAuthUrl(user.id);
+    if (url) {
+      window.location.href = url;
+    } else {
+      setGmailMessage({ type: 'error', text: 'Impossible de générer le lien de connexion.' });
+      setGmailLoading(false);
+    }
+  }
+
+  async function handleDisconnectGmail() {
+    setGmailLoading(true);
+    setGmailMessage(null);
+    const { success } = await disconnectGmail(user.id);
+    if (success) {
+      setGmailConnected(false);
+      setGmailEmail('');
+      setGmailMessage({ type: 'success', text: 'Gmail déconnecté.' });
+    } else {
+      setGmailMessage({ type: 'error', text: 'Erreur lors de la déconnexion.' });
+    }
+    setGmailLoading(false);
+  }
+
   // Initialize profile from Supabase data
   useEffect(() => {
     if (initialized) return;
@@ -546,6 +605,72 @@ export default function ProfilePage() {
               {smtpLoading ? 'Sauvegarde...' : 'Sauvegarder'}
             </Button>
           </div>
+        </Card>
+      </div>
+
+      {/* Gmail Reply Detection */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold tracking-tight mb-2">Détection automatique des réponses</h2>
+        <p className="text-gray-500 text-[15px] mb-5">
+          Connectez votre Gmail pour détecter automatiquement les réponses à vos candidatures.
+        </p>
+
+        <Card>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+              <Icon.Mail size={20} className="text-blue-500" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-sm">Gmail API (lecture seule)</h3>
+              <p className="text-xs text-gray-400">
+                {gmailConnected ? `Connecté : ${gmailEmail}` : 'Non connecté'}
+              </p>
+            </div>
+            {gmailConnected && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 px-3 py-1.5 rounded-full">
+                <Icon.Check size={14} />
+                Gmail connecté
+              </span>
+            )}
+          </div>
+
+          {!gmailConnected && (
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-5">
+              <p className="text-sm text-blue-700 leading-relaxed">
+                MedApply accède uniquement en lecture pour détecter les réponses. Aucun email ne sera envoyé via cette connexion.
+              </p>
+            </div>
+          )}
+
+          {gmailMessage && (
+            <div className={`mb-5 p-3 rounded-xl text-sm flex items-center gap-2 ${
+              gmailMessage.type === 'success'
+                ? 'bg-green-50 text-green-700 border border-green-100'
+                : 'bg-red-50 text-red-700 border border-red-100'
+            }`}>
+              {gmailMessage.type === 'success' ? <Icon.Check size={16} /> : <Icon.X size={16} />}
+              {gmailMessage.text}
+            </div>
+          )}
+
+          {gmailConnected ? (
+            <Button
+              variant="secondary"
+              onClick={handleDisconnectGmail}
+              disabled={gmailLoading}
+              icon={<Icon.X size={16} />}
+            >
+              {gmailLoading ? 'Déconnexion...' : 'Déconnecter Gmail'}
+            </Button>
+          ) : (
+            <Button
+              onClick={handleConnectGmail}
+              disabled={gmailLoading}
+              icon={<Icon.Mail size={16} />}
+            >
+              {gmailLoading ? 'Redirection...' : 'Connecter Gmail'}
+            </Button>
+          )}
         </Card>
       </div>
 

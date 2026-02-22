@@ -7,6 +7,7 @@ import ApplicationModal from '../components/ApplicationModal';
 import { useAuth } from '../contexts/AuthContext';
 import { getCandidatures, updateCandidature, deleteCandidature } from '../services/candidaturesService';
 import { sendApplication, getEmailConfig } from '../services/emailConfigService';
+import { checkReplies } from '../services/gmailService';
 
 // ============================================================
 // Config
@@ -245,6 +246,24 @@ function KanbanCard({ cand, onUpdate, onSelect, onRelance, columnId }) {
 
         {/* Relance badge */}
         {columnId === 'relance' && <div className="mb-2"><RelanceBadge cand={cand} /></div>}
+
+        {/* Reply snippet */}
+        {cand.reply_snippet && (
+          <div className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1.5 mb-2 flex items-start gap-1">
+            <Icon.Mail size={10} className="shrink-0 mt-0.5" />
+            <span className="line-clamp-2">{cand.reply_snippet.substring(0, 100)}</span>
+          </div>
+        )}
+
+        {/* Nouveau badge for recent replies */}
+        {cand.reply_detected_at && !cand._replyViewed && (() => {
+          const hoursSince = (Date.now() - new Date(cand.reply_detected_at).getTime()) / (1000 * 60 * 60);
+          return hoursSince < 48;
+        })() && (
+          <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 mb-2">
+            Nouveau
+          </span>
+        )}
 
         {/* Notes preview */}
         {cand.notes && (
@@ -546,6 +565,20 @@ ${userName}`;
             </div>
           </div>
 
+          {/* Reply snippet */}
+          {cand.reply_snippet && (
+            <div>
+              <div className="text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">Réponse reçue</div>
+              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-sm text-emerald-800 leading-relaxed">
+                <div className="flex items-center gap-1.5 mb-2 text-[11px] text-emerald-600 font-semibold">
+                  <Icon.Mail size={12} />
+                  {cand.reply_detected_at ? new Date(cand.reply_detected_at).toLocaleDateString('fr-CH', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                </div>
+                {cand.reply_snippet}
+              </div>
+            </div>
+          )}
+
           {/* Motivation letter */}
           {cand.motivation_letter && (
             <div>
@@ -831,6 +864,12 @@ export default function ApplicationsPage() {
 
   async function loadData() {
     setLoading(true);
+    // Lancer la vérification des réponses Gmail en parallèle du chargement
+    const [candResult] = await Promise.all([
+      getCandidatures(user.id),
+      checkReplies(user.id).catch(() => null),
+    ]);
+    // Recharger après check pour avoir les statuts à jour
     const { data } = await getCandidatures(user.id);
     setCandidatures(data);
     setLoading(false);
