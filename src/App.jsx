@@ -12,6 +12,7 @@ import SearchPage from './pages/SearchPage';
 import ApplicationsPage from './pages/ApplicationsPage';
 import CampaignsPage from './pages/CampaignsPage';
 import DashboardPage from './pages/DashboardPage';
+import HomePage from './pages/HomePage';
 import DiagnosticPage from './pages/installation/DiagnosticPage';
 import MebekoPage from './pages/installation/MebekoPage';
 import LanguePage from './pages/installation/LanguePage';
@@ -30,6 +31,7 @@ export default function App() {
 
             {/* Candidatures mode (existing app) */}
             <Route element={<Layout />}>
+              <Route path="/dashboard" element={<HomePage />} />
               <Route path="/profil" element={<ProfilePage />} />
               <Route path="/cv" element={<CVPage />} />
               <Route path="/parcours" element={<ParcoursPage />} />

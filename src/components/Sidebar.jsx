@@ -3,6 +3,7 @@ import { Icon } from './Icons';
 import UserMenu from './UserMenu';
 
 const navItems = [
+  { to: '/dashboard', label: 'Dashboard', icon: Icon.Home },
   { to: '/profil', label: 'Profil', icon: Icon.User },
   { to: '/cv', label: 'CV', icon: Icon.FileText },
   { to: '/parcours', label: 'Parcours', icon: Icon.Activity },
