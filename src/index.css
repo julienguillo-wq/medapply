@@ -84,11 +84,22 @@
   background-size: 200% 100%;
 }
 
-.delay-1 { animation-delay: 0.05s; }
-.delay-2 { animation-delay: 0.1s; }
-.delay-3 { animation-delay: 0.15s; }
-.delay-4 { animation-delay: 0.2s; }
-.delay-5 { animation-delay: 0.25s; }
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
+.delay-5 { animation-delay: 0.5s; }
+
+@keyframes donutFill {
+  from { stroke-dashoffset: var(--donut-circumference); }
+  to { stroke-dashoffset: var(--donut-offset); }
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
 
 @keyframes dropPulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0.35); }
