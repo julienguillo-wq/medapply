@@ -1,12 +1,14 @@
 // ============================================================
 // Backend Express.js pour MedApply
 // Gère l'envoi d'emails via SMTP Gmail (nodemailer)
+// + Envoi automatique quotidien des campagnes via node-cron
 // ============================================================
 
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
+import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
 
 const app = express();
@@ -153,6 +155,373 @@ Je m\u2019appelle ${firstName} ${lastName} et je souhaite déposer ma candidatur
 Mes meilleures salutations,
 ${firstName} ${lastName}`;
 }
+
+// ============================================================
+// Logique d'envoi de batch — fonction partagée
+// Utilisée par l'endpoint POST /api/campaigns/:id/send-next
+// ET par le cron job automatique
+// ============================================================
+
+/**
+ * Envoie le prochain batch d'une campagne.
+ * @param {string} campaignId - ID de la campagne
+ * @param {object} [options] - { source: 'cron' | 'manual' }
+ * @returns {{ sent: number, failed: number, results: Array, completed: boolean }}
+ */
+async function sendCampaignBatch(campaignId, options = {}) {
+  const source = options.source || 'manual';
+  const admin = getSupabaseAdmin();
+
+  // Récupérer la campagne
+  const { data: campaign, error: campError } = await admin
+    .from('campaigns')
+    .select('*')
+    .eq('id', campaignId)
+    .single();
+
+  if (campError || !campaign) {
+    throw new Error('Campagne non trouvée');
+  }
+
+  if (campaign.status === 'paused') {
+    throw new Error('Campagne en pause');
+  }
+
+  // Récupérer le contexte d'envoi (utilise admin pour le cron, car pas de token utilisateur)
+  const { emailConfig, attachments, userName, userProfile } = await getUserSendContext(admin, campaign.user_id);
+
+  // Récupérer les prochains items 'ready'
+  const { data: readyItems, error: itemsError } = await admin
+    .from('campaign_items')
+    .select('*')
+    .eq('campaign_id', campaignId)
+    .eq('item_status', 'ready')
+    .order('created_at', { ascending: true })
+    .limit(campaign.send_per_day);
+
+  if (itemsError) {
+    throw new Error(itemsError.message);
+  }
+
+  if (!readyItems || readyItems.length === 0) {
+    // Plus rien à envoyer → marquer comme terminée
+    await admin
+      .from('campaigns')
+      .update({ status: 'completed' })
+      .eq('id', campaignId);
+
+    console.log(`[${source}] Campagne ${campaignId} terminée — plus d'items à envoyer`);
+    return { sent: 0, failed: 0, results: [], completed: true };
+  }
+
+  // Mettre à jour le statut de la campagne
+  if (campaign.status === 'draft') {
+    await admin
+      .from('campaigns')
+      .update({ status: 'in_progress' })
+      .eq('id', campaignId);
+  }
+
+  // Créer le transporteur SMTP
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: emailConfig.email_address,
+      pass: emailConfig.smtp_password,
+    },
+  });
+
+  // Récupérer la spécialité de l'utilisateur pour le sujet
+  const userSpecialty = userProfile?.specialty || '';
+
+  let sentCount = 0;
+  let failedCount = 0;
+  const results = [];
+
+  for (const item of readyItems) {
+    if (!item.director_email) {
+      // Pas d'email → marquer en échec
+      await admin
+        .from('campaign_items')
+        .update({
+          item_status: 'failed',
+          error_message: 'Pas d\'email disponible',
+        })
+        .eq('id', item.id);
+      failedCount++;
+      results.push({ id: item.id, status: 'failed', error: 'Pas d\'email' });
+      console.log(`[${source}] ${campaign.name} — ${item.establishment_name}: ECHEC (pas d'email)`);
+      continue;
+    }
+
+    try {
+      const subject = `Candidature spontanée - ${item.specialty || userSpecialty || 'Médecine'} - ${userName}`;
+
+      const letterHtml = buildMailHtml(item.motivation_letter, userName, userProfile);
+
+      const mailOptions = {
+        from: `${userName} <${emailConfig.email_address}>`,
+        to: item.director_email,
+        replyTo: emailConfig.email_address,
+        subject,
+        html: letterHtml,
+        attachments,
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`[${source}] ${campaign.name} — Email envoyé à ${item.director_email}: ${info.messageId}`);
+
+      await admin
+        .from('campaign_items')
+        .update({
+          item_status: 'sent',
+          sent_at: new Date().toISOString(),
+        })
+        .eq('id', item.id);
+
+      // Marquer l'email comme validé
+      try {
+        await admin
+          .from('establishment_emails')
+          .upsert({
+            establishment_id: item.establishment_id,
+            email_status: 'validated',
+            email_validated_at: new Date().toISOString(),
+            email_validated_by: campaign.user_id,
+          }, { onConflict: 'establishment_id' });
+      } catch { /* ignore */ }
+
+      sentCount++;
+      results.push({ id: item.id, status: 'sent' });
+    } catch (sendErr) {
+      console.error(`[${source}] ${campaign.name} — Erreur envoi ${item.director_email}:`, sendErr.message);
+
+      await admin
+        .from('campaign_items')
+        .update({
+          item_status: 'failed',
+          error_message: sendErr.message,
+        })
+        .eq('id', item.id);
+
+      // Détecter les bounces
+      const bouncePattern = /\b(550|551|553|mailbox not found|user unknown|no such user|address rejected)\b/i;
+      if (bouncePattern.test(sendErr.message)) {
+        try {
+          const { data: existing } = await admin
+            .from('establishment_emails')
+            .select('bounce_count')
+            .eq('establishment_id', item.establishment_id)
+            .single();
+
+          await admin
+            .from('establishment_emails')
+            .upsert({
+              establishment_id: item.establishment_id,
+              email_status: 'invalid',
+              bounce_count: (existing?.bounce_count || 0) + 1,
+            }, { onConflict: 'establishment_id' });
+        } catch { /* ignore */ }
+      }
+
+      failedCount++;
+      results.push({ id: item.id, status: 'failed', error: sendErr.message });
+    }
+  }
+
+  // Mettre à jour les compteurs de la campagne
+  await admin
+    .from('campaigns')
+    .update({
+      sent_count: campaign.sent_count + sentCount,
+      failed_count: campaign.failed_count + failedCount,
+    })
+    .eq('id', campaignId);
+
+  // Vérifier si tous les items sont traités
+  const { data: remainingItems } = await admin
+    .from('campaign_items')
+    .select('id')
+    .eq('campaign_id', campaignId)
+    .eq('item_status', 'ready');
+
+  const completed = !remainingItems || remainingItems.length === 0;
+  if (completed) {
+    await admin
+      .from('campaigns')
+      .update({ status: 'completed' })
+      .eq('id', campaignId);
+    console.log(`[${source}] Campagne "${campaign.name}" terminée — tous les emails envoyés`);
+  }
+
+  return { sent: sentCount, failed: failedCount, results, completed };
+}
+
+// ============================================================
+// Cron job — Envoi automatique quotidien à 8h00
+// ============================================================
+
+const cronLog = []; // Historique des exécutions du cron (en mémoire)
+
+cron.schedule('0 8 * * *', async () => {
+  const timestamp = new Date().toISOString();
+  console.log(`\n[cron] ========== Envoi automatique déclenché à ${timestamp} ==========`);
+
+  const admin = getSupabaseAdmin();
+
+  try {
+    // Trouver toutes les campagnes actives (in_progress ou draft) avec des items restants
+    const { data: campaigns, error } = await admin
+      .from('campaigns')
+      .select('id, name, status, send_per_day')
+      .in('status', ['in_progress', 'draft']);
+
+    if (error) {
+      console.error('[cron] Erreur récupération campagnes:', error.message);
+      cronLog.push({ timestamp, error: error.message, campaigns: 0, totalSent: 0, totalFailed: 0 });
+      return;
+    }
+
+    if (!campaigns || campaigns.length === 0) {
+      console.log('[cron] Aucune campagne active trouvée');
+      cronLog.push({ timestamp, campaigns: 0, totalSent: 0, totalFailed: 0 });
+      return;
+    }
+
+    console.log(`[cron] ${campaigns.length} campagne(s) active(s) trouvée(s)`);
+
+    let totalSent = 0;
+    let totalFailed = 0;
+    const campaignResults = [];
+
+    for (const campaign of campaigns) {
+      // Vérifier qu'il reste des items 'ready'
+      const { count } = await admin
+        .from('campaign_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('campaign_id', campaign.id)
+        .eq('item_status', 'ready');
+
+      if (!count || count === 0) {
+        console.log(`[cron] Campagne "${campaign.name}" — aucun item restant, marquée comme terminée`);
+        await admin.from('campaigns').update({ status: 'completed' }).eq('id', campaign.id);
+        campaignResults.push({ id: campaign.id, name: campaign.name, sent: 0, failed: 0, skipped: true });
+        continue;
+      }
+
+      console.log(`[cron] Campagne "${campaign.name}" — ${count} items restants, envoi de max ${campaign.send_per_day}...`);
+
+      try {
+        const result = await sendCampaignBatch(campaign.id, { source: 'cron' });
+        totalSent += result.sent;
+        totalFailed += result.failed;
+        campaignResults.push({
+          id: campaign.id,
+          name: campaign.name,
+          sent: result.sent,
+          failed: result.failed,
+          completed: result.completed,
+        });
+      } catch (batchErr) {
+        console.error(`[cron] Erreur campagne "${campaign.name}":`, batchErr.message);
+        campaignResults.push({
+          id: campaign.id,
+          name: campaign.name,
+          sent: 0,
+          failed: 0,
+          error: batchErr.message,
+        });
+      }
+    }
+
+    const logEntry = { timestamp, campaigns: campaigns.length, totalSent, totalFailed, details: campaignResults };
+    cronLog.push(logEntry);
+    // Garder max 100 entrées
+    if (cronLog.length > 100) cronLog.shift();
+
+    console.log(`[cron] ========== Terminé: ${totalSent} envoyé(s), ${totalFailed} échoué(s) ==========\n`);
+  } catch (err) {
+    console.error('[cron] Erreur générale:', err.message);
+    cronLog.push({ timestamp, error: err.message, campaigns: 0, totalSent: 0, totalFailed: 0 });
+  }
+}, {
+  timezone: 'Europe/Zurich',
+});
+
+console.log('[cron] Scheduler actif — envoi automatique quotidien à 08:00 (Europe/Zurich)');
+
+// ============================================================
+// GET /api/cron/status
+// Retourne le statut du scheduler et l'historique des exécutions
+// ============================================================
+app.get('/api/cron/status', (req, res) => {
+  res.json({
+    active: true,
+    schedule: '0 8 * * * (tous les jours à 08:00)',
+    timezone: 'Europe/Zurich',
+    recentRuns: cronLog.slice(-10).reverse(),
+  });
+});
+
+// ============================================================
+// POST /api/cron/trigger
+// Déclenche manuellement le cron job (pour test / debug)
+// ============================================================
+app.post('/api/cron/trigger', async (req, res) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[cron/trigger] Déclenchement manuel à ${timestamp}`);
+
+  const admin = getSupabaseAdmin();
+
+  try {
+    const { data: campaigns, error } = await admin
+      .from('campaigns')
+      .select('id, name, status, send_per_day')
+      .in('status', ['in_progress', 'draft']);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    if (!campaigns || campaigns.length === 0) {
+      return res.json({ success: true, message: 'Aucune campagne active', totalSent: 0, totalFailed: 0 });
+    }
+
+    let totalSent = 0;
+    let totalFailed = 0;
+    const campaignResults = [];
+
+    for (const campaign of campaigns) {
+      try {
+        const result = await sendCampaignBatch(campaign.id, { source: 'cron/trigger' });
+        totalSent += result.sent;
+        totalFailed += result.failed;
+        campaignResults.push({
+          id: campaign.id,
+          name: campaign.name,
+          sent: result.sent,
+          failed: result.failed,
+          completed: result.completed,
+        });
+      } catch (batchErr) {
+        campaignResults.push({
+          id: campaign.id,
+          name: campaign.name,
+          error: batchErr.message,
+        });
+      }
+    }
+
+    cronLog.push({ timestamp, campaigns: campaigns.length, totalSent, totalFailed, details: campaignResults, manual: true });
+    if (cronLog.length > 100) cronLog.shift();
+
+    return res.json({ success: true, totalSent, totalFailed, campaigns: campaignResults });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
 
 // ============================================================
 // POST /api/test-smtp
@@ -441,209 +810,31 @@ app.post('/api/campaigns/:id/send-next', async (req, res) => {
     return res.status(401).json({ error: 'Token d\'authentification requis' });
   }
 
-  const accessToken = authHeader.split(' ')[1];
   const campaignId = req.params.id;
 
   try {
-    const admin = getSupabaseAdmin();
-    const supabase = getSupabaseClient(accessToken);
+    const result = await sendCampaignBatch(campaignId, { source: 'manual' });
 
-    // Récupérer la campagne
-    const { data: campaign, error: campError } = await admin
-      .from('campaigns')
-      .select('*')
-      .eq('id', campaignId)
-      .single();
-
-    if (campError || !campaign) {
-      return res.status(404).json({ error: 'Campagne non trouvée' });
-    }
-
-    if (campaign.status === 'paused') {
-      return res.status(400).json({ error: 'Campagne en pause' });
-    }
-
-    // Récupérer le contexte d'envoi
-    const { emailConfig, attachments, userName, userProfile } = await getUserSendContext(supabase, campaign.user_id);
-
-    // Récupérer les prochains items 'ready'
-    const { data: readyItems, error: itemsError } = await admin
-      .from('campaign_items')
-      .select('*')
-      .eq('campaign_id', campaignId)
-      .eq('item_status', 'ready')
-      .order('created_at', { ascending: true })
-      .limit(campaign.send_per_day);
-
-    if (itemsError) {
-      return res.status(500).json({ error: itemsError.message });
-    }
-
-    if (!readyItems || readyItems.length === 0) {
-      // Plus rien à envoyer → marquer comme terminée
-      await admin
-        .from('campaigns')
-        .update({ status: 'completed' })
-        .eq('id', campaignId);
-
+    if (result.sent === 0 && result.completed) {
       return res.json({ success: true, sent: 0, message: 'Tous les envois ont été effectués' });
-    }
-
-    // Mettre à jour le statut de la campagne
-    if (campaign.status === 'draft') {
-      await admin
-        .from('campaigns')
-        .update({ status: 'in_progress' })
-        .eq('id', campaignId);
-    }
-
-    // Créer le transporteur SMTP
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: emailConfig.email_address,
-        pass: emailConfig.smtp_password,
-      },
-    });
-
-    // Récupérer la spécialité de l'utilisateur pour le sujet
-    let userSpecialty = '';
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('specialty')
-        .eq('id', campaign.user_id)
-        .single();
-      userSpecialty = profile?.specialty || '';
-    } catch { /* ignore */ }
-
-    let sentCount = 0;
-    let failedCount = 0;
-    const results = [];
-
-    for (const item of readyItems) {
-      if (!item.director_email) {
-        // Pas d'email → marquer en échec
-        await admin
-          .from('campaign_items')
-          .update({
-            item_status: 'failed',
-            error_message: 'Pas d\'email disponible',
-          })
-          .eq('id', item.id);
-        failedCount++;
-        results.push({ id: item.id, status: 'failed', error: 'Pas d\'email' });
-        continue;
-      }
-
-      try {
-        const subject = `Candidature spontanée - ${item.specialty || userSpecialty || 'Médecine'} - ${userName}`;
-
-        const letterHtml = buildMailHtml(item.motivation_letter, userName, userProfile);
-
-        const mailOptions = {
-          from: `${userName} <${emailConfig.email_address}>`,
-          to: item.director_email,
-          replyTo: emailConfig.email_address,
-          subject,
-          html: letterHtml,
-          attachments,
-        };
-
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`[campaigns/send-next] Email envoyé à ${item.director_email}:`, info.messageId);
-
-        await admin
-          .from('campaign_items')
-          .update({
-            item_status: 'sent',
-            sent_at: new Date().toISOString(),
-          })
-          .eq('id', item.id);
-
-        // Marquer l'email comme validé
-        try {
-          await admin
-            .from('establishment_emails')
-            .upsert({
-              establishment_id: item.establishment_id,
-              email_status: 'validated',
-              email_validated_at: new Date().toISOString(),
-              email_validated_by: campaign.user_id,
-            }, { onConflict: 'establishment_id' });
-        } catch { /* ignore */ }
-
-        sentCount++;
-        results.push({ id: item.id, status: 'sent' });
-      } catch (sendErr) {
-        console.error(`[campaigns/send-next] Erreur envoi ${item.director_email}:`, sendErr.message);
-
-        await admin
-          .from('campaign_items')
-          .update({
-            item_status: 'failed',
-            error_message: sendErr.message,
-          })
-          .eq('id', item.id);
-
-        // Détecter les bounces
-        const bouncePattern = /\b(550|551|553|mailbox not found|user unknown|no such user|address rejected)\b/i;
-        if (bouncePattern.test(sendErr.message)) {
-          try {
-            const { data: existing } = await admin
-              .from('establishment_emails')
-              .select('bounce_count')
-              .eq('establishment_id', item.establishment_id)
-              .single();
-
-            await admin
-              .from('establishment_emails')
-              .upsert({
-                establishment_id: item.establishment_id,
-                email_status: 'invalid',
-                bounce_count: (existing?.bounce_count || 0) + 1,
-              }, { onConflict: 'establishment_id' });
-          } catch { /* ignore */ }
-        }
-
-        failedCount++;
-        results.push({ id: item.id, status: 'failed', error: sendErr.message });
-      }
-    }
-
-    // Mettre à jour les compteurs de la campagne
-    await admin
-      .from('campaigns')
-      .update({
-        sent_count: campaign.sent_count + sentCount,
-        failed_count: campaign.failed_count + failedCount,
-      })
-      .eq('id', campaignId);
-
-    // Vérifier si tous les items sont traités
-    const { data: remainingItems } = await admin
-      .from('campaign_items')
-      .select('id')
-      .eq('campaign_id', campaignId)
-      .eq('item_status', 'ready');
-
-    if (!remainingItems || remainingItems.length === 0) {
-      await admin
-        .from('campaigns')
-        .update({ status: 'completed' })
-        .eq('id', campaignId);
     }
 
     return res.json({
       success: true,
-      sent: sentCount,
-      failed: failedCount,
-      results,
+      sent: result.sent,
+      failed: result.failed,
+      results: result.results,
     });
   } catch (err) {
     console.error('[campaigns/send-next] Erreur:', err.message);
+
+    if (err.message === 'Campagne non trouvée') {
+      return res.status(404).json({ error: err.message });
+    }
+    if (err.message === 'Campagne en pause') {
+      return res.status(400).json({ error: err.message });
+    }
+
     return res.status(500).json({ error: err.message });
   }
 });
