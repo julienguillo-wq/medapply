@@ -79,8 +79,7 @@ async function getUserSendContext(supabase, userId) {
     }
   }
 
-  // Profil + signature
-  let signature = '';
+  // Profil (pas de signature serveur — les infos contact sont dans le corps du mail)
   let userProfile = null;
   try {
     const { data: profile } = await supabase
@@ -90,17 +89,6 @@ async function getUserSendContext(supabase, userId) {
       .single();
 
     userProfile = profile;
-    if (profile) {
-      const sigParts = [];
-      const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
-      if (fullName) sigParts.push(fullName);
-      sigParts.push('Médecin assistante');
-      if (profile.phone) sigParts.push(`Tél : ${profile.phone}`);
-      if (profile.email) sigParts.push(profile.email);
-      if (sigParts.length > 0) {
-        signature = '\n\n—\n' + sigParts.join('\n');
-      }
-    }
   } catch (sigErr) {
     console.warn('[getUserSendContext] Impossible de charger le profil:', sigErr.message);
   }
@@ -109,7 +97,7 @@ async function getUserSendContext(supabase, userId) {
     ? [userProfile.first_name, userProfile.last_name].filter(Boolean).join(' ')
     : emailConfig.email_address;
 
-  return { emailConfig, attachments, signature, userProfile, userName };
+  return { emailConfig, attachments, userProfile, userName };
 }
 
 /**
@@ -230,7 +218,7 @@ app.post('/api/send-application', async (req, res) => {
 
   try {
     const supabase = getSupabaseClient(accessToken);
-    const { emailConfig, attachments, signature } = await getUserSendContext(supabase, userId);
+    const { emailConfig, attachments } = await getUserSendContext(supabase, userId);
 
     // Créer le transporteur SMTP
     const transporter = nodemailer.createTransport({
@@ -249,7 +237,7 @@ app.post('/api/send-application', async (req, res) => {
       to,
       replyTo: emailConfig.email_address,
       subject,
-      text: body + signature,
+      text: body,
       attachments,
     };
 
@@ -437,7 +425,7 @@ app.post('/api/campaigns/:id/send-next', async (req, res) => {
     }
 
     // Récupérer le contexte d'envoi
-    const { emailConfig, attachments, signature, userName } = await getUserSendContext(supabase, campaign.user_id);
+    const { emailConfig, attachments, userName } = await getUserSendContext(supabase, campaign.user_id);
 
     // Récupérer les prochains items 'ready'
     const { data: readyItems, error: itemsError } = await admin
@@ -519,7 +507,7 @@ app.post('/api/campaigns/:id/send-next', async (req, res) => {
           to: item.director_email,
           replyTo: emailConfig.email_address,
           subject,
-          text: item.motivation_letter + signature,
+          text: item.motivation_letter,
           attachments,
         };
 

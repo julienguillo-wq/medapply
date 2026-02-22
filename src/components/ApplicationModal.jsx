@@ -114,7 +114,7 @@ Je m\u2019appelle Giulia Scattu et je souhaite d\u00e9poser ma candidature pour 
 En esp\u00e9rant que ma candidature retiendra votre attention, je reste \u00e0 votre disposition pour toute information compl\u00e9mentaire et je vous prie d\u2019agr\u00e9er, ${closing}, l\u2019expression de mes salutations distingu\u00e9es.
 
 ${userName}
-M\u00e9decin assistante`);
+Médecin assistante${profile?.phone ? `\nTél : ${profile.phone}` : ''}${profile?.email ? `\n${profile.email}` : ''}`);
   }
 
   async function handleSaveDraft() {
