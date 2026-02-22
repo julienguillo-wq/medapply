@@ -29,6 +29,20 @@ function daysSince(dateStr) {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
 }
 
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const days = daysSince(dateStr);
+  if (days === 0) return "Aujourd'hui";
+  if (days === 1) return 'Hier';
+  if (days < 7) return `Il y a ${days} jours`;
+  if (days < 30) {
+    const weeks = Math.floor(days / 7);
+    return `Il y a ${weeks} sem.`;
+  }
+  const months = Math.floor(days / 30);
+  return `Il y a ${months} mois`;
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return '--';
   return new Date(dateStr).toLocaleDateString('fr-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -56,10 +70,10 @@ function getColumn(cand) {
 }
 
 const columns = [
-  { id: 'sent',    title: 'Envoyees',       color: 'blue',   borderColor: 'border-blue-300',   bgColor: 'bg-blue-50',   textColor: 'text-blue-700',   headerBg: 'bg-blue-100' },
-  { id: 'relance', title: 'A relancer',     color: 'orange', borderColor: 'border-orange-300', bgColor: 'bg-orange-50', textColor: 'text-orange-700', headerBg: 'bg-orange-100' },
-  { id: 'replied', title: 'Reponse recue',  color: 'green',  borderColor: 'border-emerald-300',bgColor: 'bg-emerald-50',textColor: 'text-emerald-700',headerBg: 'bg-emerald-100' },
-  { id: 'done',    title: 'Terminee',       color: 'gray',   borderColor: 'border-gray-300',   bgColor: 'bg-gray-50',   textColor: 'text-gray-600',   headerBg: 'bg-gray-100' },
+  { id: 'sent',    title: 'Envoyees',       iconName: 'Send',          borderColor: 'border-blue-300',   bgColor: 'bg-blue-50',   textColor: 'text-blue-700',   headerBg: 'bg-blue-100',    barColor: 'bg-blue-400',    emptyMsg: 'Lancez vos candidatures depuis la page Recherche' },
+  { id: 'relance', title: 'A relancer',     iconName: 'AlertTriangle', borderColor: 'border-orange-300', bgColor: 'bg-orange-50', textColor: 'text-orange-700', headerBg: 'bg-orange-100',  barColor: 'bg-orange-400',  emptyMsg: 'Tout va bien, aucune relance necessaire' },
+  { id: 'replied', title: 'Reponse recue',  iconName: 'Mail',          borderColor: 'border-emerald-300',bgColor: 'bg-emerald-50',textColor: 'text-emerald-700',headerBg: 'bg-emerald-100', barColor: 'bg-emerald-400', emptyMsg: 'Les reponses arrivent bientot...' },
+  { id: 'done',    title: 'Terminee',       iconName: 'Check',         borderColor: 'border-gray-300',   bgColor: 'bg-gray-50',   textColor: 'text-gray-600',   headerBg: 'bg-gray-100',    barColor: 'bg-gray-400',    emptyMsg: 'Vos futures reussites apparaitront ici' },
 ];
 
 // ============================================================
@@ -173,6 +187,9 @@ function KanbanCard({ cand, onUpdate, onSelect, onRelance, columnId }) {
   const days = daysSince(cand.sent_at || cand.created_at);
   const statusCfg = allStatuses[cand.status] || allStatuses.draft;
 
+  // Left bar color based on age
+  const barColor = days >= RELANCE_DAYS ? 'bg-red-400' : days >= 7 ? 'bg-orange-400' : 'bg-blue-400';
+
   return (
     <div
       draggable
@@ -181,89 +198,107 @@ function KanbanCard({ cand, onUpdate, onSelect, onRelance, columnId }) {
         e.dataTransfer.effectAllowed = 'move';
       }}
       onClick={() => onSelect(cand)}
-      className="bg-white rounded-xl border border-gray-200 p-3.5 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200 group"
+      className="bg-white rounded-xl border border-gray-200 cursor-pointer hover:shadow-lg hover:border-blue-200 hover:-translate-y-0.5 transition-all duration-200 group overflow-hidden flex"
     >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="min-w-0 flex-1">
-          <div className="font-semibold text-sm truncate">{cand.establishment_name}</div>
-          <div className="text-[12px] text-gray-400">
-            {cand.establishment_city}{cand.establishment_canton ? ` (${cand.establishment_canton})` : ''}
+      {/* Left color bar */}
+      <div className={`w-[3px] shrink-0 ${barColor}`} />
+
+      <div className="flex-1 p-3.5 min-w-0">
+        {/* Header: name + canton badge */}
+        <div className="flex items-start justify-between gap-2 mb-1.5">
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold text-sm truncate">{cand.establishment_name}</div>
+            <div className="text-[12px] text-gray-400">
+              {cand.establishment_city || '--'}
+            </div>
+            {cand.specialty && (
+              <div className="text-[11px] text-gray-400 truncate">{cand.specialty}</div>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            {cand.establishment_canton && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                {cand.establishment_canton}
+              </span>
+            )}
+            {columnId === 'done' && (
+              <Badge variant={statusCfg.variant} icon={statusCfg.icon}>
+                {cand.status === 'accepted' ? 'Acceptee' : 'Refusee'}
+              </Badge>
+            )}
           </div>
         </div>
-        {columnId === 'done' && (
-          <Badge variant={statusCfg.variant} icon={statusCfg.icon}>
-            {cand.status === 'accepted' ? 'Acceptee' : 'Refusee'}
-          </Badge>
-        )}
-      </div>
 
-      {/* Director + date */}
-      {cand.director_name && (
-        <div className="text-[12px] text-gray-500 flex items-center gap-1 mb-1">
-          <Icon.User size={11} className="shrink-0" />
-          <span className="truncate">{cand.director_name}</span>
+        {/* Director */}
+        {cand.director_name && (
+          <div className="text-[12px] text-gray-500 flex items-center gap-1 mb-1">
+            <Icon.User size={11} className="shrink-0" />
+            <span className="truncate">{cand.director_name}</span>
+          </div>
+        )}
+
+        {/* Time ago */}
+        <div className="text-[11px] text-gray-400 flex items-center gap-1 mb-2">
+          <Icon.Clock size={10} className="shrink-0" />
+          {timeAgo(cand.sent_at || cand.created_at)}
         </div>
-      )}
-      <div className="text-[12px] text-gray-400 flex items-center gap-1 mb-2">
-        <Icon.Calendar size={11} className="shrink-0" />
-        {formatDate(cand.sent_at || cand.created_at)}
-      </div>
 
-      {/* Relance badge */}
-      {columnId === 'relance' && <div className="mb-2"><RelanceBadge cand={cand} /></div>}
+        {/* Relance badge */}
+        {columnId === 'relance' && <div className="mb-2"><RelanceBadge cand={cand} /></div>}
 
-      {/* Notes preview */}
-      {cand.notes && (
-        <div className="text-[11px] text-gray-400 bg-gray-50 rounded-lg px-2 py-1 mb-2 truncate">
-          {cand.notes}
+        {/* Notes preview */}
+        {cand.notes && (
+          <div className="text-[11px] text-gray-400 bg-gray-50 rounded-lg px-2 py-1 mb-2 truncate flex items-center gap-1">
+            <Icon.Edit size={10} className="shrink-0" />
+            {cand.notes}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="relative flex items-center gap-1 pt-2 border-t border-gray-100">
+          {(columnId === 'sent' || columnId === 'relance') && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowResponse(!showResponse); }}
+              className="text-[11px] text-gray-400 hover:text-emerald-600 px-2 py-1 rounded-lg hover:bg-emerald-50 cursor-pointer transition-colors"
+              title="Reponse recue"
+            >
+              <Icon.Mail size={13} />
+            </button>
+          )}
+
+          {columnId === 'relance' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onRelance(cand); }}
+              className="text-[11px] text-gray-400 hover:text-orange-600 px-2 py-1 rounded-lg hover:bg-orange-50 cursor-pointer transition-colors"
+              title="Relancer"
+            >
+              <Icon.Send size={13} />
+            </button>
+          )}
+
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowNote(!showNote); }}
+            className="text-[11px] text-gray-400 hover:text-primary px-2 py-1 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors"
+            title="Note"
+          >
+            <Icon.Edit size={13} />
+          </button>
+
+          {showResponse && (
+            <ResponsePopup
+              onSelect={handleResponseSelect}
+              onClose={() => setShowResponse(false)}
+            />
+          )}
+
+          {showNote && (
+            <NotePopup
+              cand={cand}
+              onSave={handleSaveNote}
+              onClose={() => setShowNote(false)}
+            />
+          )}
         </div>
-      )}
-
-      {/* Actions */}
-      <div className="relative flex items-center gap-1 pt-2 border-t border-gray-100">
-        {(columnId === 'sent' || columnId === 'relance') && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowResponse(!showResponse); }}
-            className="text-[11px] text-gray-500 hover:text-emerald-600 px-2 py-1 rounded-lg hover:bg-emerald-50 cursor-pointer transition-colors"
-            title="Reponse recue"
-          >
-            <Icon.Mail size={13} />
-          </button>
-        )}
-
-        {columnId === 'relance' && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onRelance(cand); }}
-            className="text-[11px] text-gray-500 hover:text-orange-600 px-2 py-1 rounded-lg hover:bg-orange-50 cursor-pointer transition-colors"
-            title="Relancer"
-          >
-            <Icon.Send size={13} />
-          </button>
-        )}
-
-        <button
-          onClick={(e) => { e.stopPropagation(); setShowNote(!showNote); }}
-          className="text-[11px] text-gray-500 hover:text-primary px-2 py-1 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors"
-          title="Note"
-        >
-          <Icon.Edit size={13} />
-        </button>
-
-        {showResponse && (
-          <ResponsePopup
-            onSelect={handleResponseSelect}
-            onClose={() => setShowResponse(false)}
-          />
-        )}
-
-        {showNote && (
-          <NotePopup
-            cand={cand}
-            onSave={handleSaveNote}
-            onClose={() => setShowNote(false)}
-          />
-        )}
       </div>
     </div>
   );
@@ -275,6 +310,7 @@ function KanbanCard({ cand, onUpdate, onSelect, onRelance, columnId }) {
 
 function KanbanColumn({ col, cards, onUpdate, onSelect, onRelance, onDrop }) {
   const [dragOver, setDragOver] = useState(false);
+  const ColIcon = Icon[col.iconName];
 
   function handleDragOver(e) {
     e.preventDefault();
@@ -302,7 +338,10 @@ function KanbanColumn({ col, cards, onUpdate, onSelect, onRelance, onDrop }) {
     >
       {/* Column header */}
       <div className={`flex items-center justify-between px-4 py-3 rounded-t-2xl ${col.headerBg}`}>
-        <h3 className={`text-sm font-bold ${col.textColor}`}>{col.title}</h3>
+        <div className="flex items-center gap-2">
+          {ColIcon && <ColIcon size={15} className={col.textColor} />}
+          <h3 className={`text-sm font-bold ${col.textColor}`}>{col.title}</h3>
+        </div>
         <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${col.bgColor} ${col.textColor}`}>
           {cards.length}
         </span>
@@ -311,8 +350,11 @@ function KanbanColumn({ col, cards, onUpdate, onSelect, onRelance, onDrop }) {
       {/* Cards */}
       <div className="flex-1 p-2.5 space-y-2.5 overflow-y-auto max-h-[calc(100vh-280px)] min-h-[120px]">
         {cards.length === 0 && (
-          <div className="text-center py-8 text-gray-300 text-xs">
-            Aucune candidature
+          <div className="text-center py-10 px-4">
+            <div className={`w-10 h-10 rounded-full ${col.bgColor} flex items-center justify-center mx-auto mb-3`}>
+              {ColIcon && <ColIcon size={18} className={`${col.textColor} opacity-60`} />}
+            </div>
+            <div className="text-gray-400 text-xs leading-relaxed">{col.emptyMsg}</div>
           </div>
         )}
         {cards.map(cand => (
@@ -325,6 +367,51 @@ function KanbanColumn({ col, cards, onUpdate, onSelect, onRelance, onDrop }) {
             onRelance={onRelance}
           />
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Distribution bar
+// ============================================================
+
+function DistributionBar({ columnData, total }) {
+  if (total === 0) return null;
+
+  return (
+    <div className="mt-4 mb-2">
+      <div className="flex items-center justify-between text-[11px] text-gray-400 mb-1.5">
+        <span>Repartition</span>
+        <span>{total} candidature{total > 1 ? 's' : ''}</span>
+      </div>
+      <div className="flex h-2 rounded-full overflow-hidden bg-gray-100">
+        {columns.map(col => {
+          const count = columnData[col.id]?.length || 0;
+          if (count === 0) return null;
+          const pct = (count / total) * 100;
+          return (
+            <div
+              key={col.id}
+              className={`${col.barColor} transition-all duration-500`}
+              style={{ width: `${pct}%` }}
+              title={`${col.title}: ${count}`}
+            />
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-4 mt-2">
+        {columns.map(col => {
+          const count = columnData[col.id]?.length || 0;
+          if (count === 0) return null;
+          return (
+            <div key={col.id} className="flex items-center gap-1.5 text-[11px] text-gray-500">
+              <div className={`w-2 h-2 rounded-full ${col.barColor}`} />
+              <span>{col.title}</span>
+              <span className="font-semibold">{count}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -885,19 +972,22 @@ export default function ApplicationsPage() {
 
       {/* Kanban view */}
       {view === 'kanban' && (
-        <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2">
-          {columns.map(col => (
-            <KanbanColumn
-              key={col.id}
-              col={col}
-              cards={columnData[col.id]}
-              onUpdate={handleUpdate}
-              onSelect={setSelectedCand}
-              onRelance={setRelanceCand}
-              onDrop={handleDrop}
-            />
-          ))}
-        </div>
+        <>
+          <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2">
+            {columns.map(col => (
+              <KanbanColumn
+                key={col.id}
+                col={col}
+                cards={columnData[col.id]}
+                onUpdate={handleUpdate}
+                onSelect={setSelectedCand}
+                onRelance={setRelanceCand}
+                onDrop={handleDrop}
+              />
+            ))}
+          </div>
+          <DistributionBar columnData={columnData} total={candidatures.length} />
+        </>
       )}
 
       {/* Table view */}
