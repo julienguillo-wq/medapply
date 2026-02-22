@@ -11,7 +11,7 @@ import DocumentsPage from './pages/DocumentsPage';
 import SearchPage from './pages/SearchPage';
 import ApplicationsPage from './pages/ApplicationsPage';
 import CampaignsPage from './pages/CampaignsPage';
-import DashboardPage from './pages/DashboardPage';
+
 import HomePage from './pages/HomePage';
 import DiagnosticPage from './pages/installation/DiagnosticPage';
 import MebekoPage from './pages/installation/MebekoPage';
@@ -42,7 +42,6 @@ export default function App() {
               <Route path="/recherche" element={<SearchPage />} />
               <Route path="/candidatures" element={<ApplicationsPage />} />
               <Route path="/campagnes" element={<CampaignsPage />} />
-              <Route path="/tableau-de-bord" element={<DashboardPage />} />
             </Route>
 
             {/* Installation mode */}

@@ -383,7 +383,7 @@ export default function HomePage() {
     recommendations.push({
       title: `${stale.length} candidature${stale.length > 1 ? 's' : ''} à relancer`,
       description: stale.slice(0, 3).map(c => c.establishment_name).join(', ') + (stale.length > 3 ? '…' : ''),
-      to: '/tableau-de-bord', icon: <Icon.Clock size={20} />, color: 'text-red-700', bg: 'bg-error-bg',
+      to: '/candidatures', icon: <Icon.Clock size={20} />, color: 'text-red-700', bg: 'bg-error-bg',
     });
   }
 
@@ -505,7 +505,7 @@ export default function HomePage() {
         <div className="flex items-center justify-between">
           <SectionTitle>Dernières candidatures</SectionTitle>
           {candidatures.length > 5 && (
-            <Link to="/tableau-de-bord" className="text-primary text-sm font-semibold hover:underline mb-5">
+            <Link to="/candidatures" className="text-primary text-sm font-semibold hover:underline mb-5">
               Voir tout
             </Link>
           )}
@@ -560,7 +560,7 @@ export default function HomePage() {
                     <div>
                       {staleRow ? (
                         <Link
-                          to="/tableau-de-bord"
+                          to="/candidatures"
                           className="text-xs font-semibold text-red-600 hover:text-red-700 hover:underline transition-colors"
                         >
                           Relancer
@@ -591,7 +591,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-between">
                       <div className="text-gray-400 text-[13px]">{formatDate(cand.sent_at || cand.created_at)}</div>
                       {staleRow && (
-                        <Link to="/tableau-de-bord" className="text-xs font-semibold text-red-600">
+                        <Link to="/candidatures" className="text-xs font-semibold text-red-600">
                           Relancer
                         </Link>
                       )}
