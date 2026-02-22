@@ -18,6 +18,31 @@ const CANTON_NAMES = {
 
 const EMAILS_STORAGE_KEY = 'medapply_emails';
 
+/**
+ * Classify an establishment as hospitalier / ambulatoire / autre
+ * based on SIWF category and name patterns.
+ */
+export function classifySetting(est) {
+  const cat = (est.category || '').toLowerCase();
+  const name = (est.name || '').toLowerCase();
+
+  // 1. Category-based signals
+  if (/cabinets?\s*m[ée]dicaux|p-a.*cabinets/i.test(est.category)) return 'ambulatoire';
+  if (/ambulant|ambulatorien/i.test(est.category)) return 'ambulatoire';
+  if (/station[aä]r/i.test(est.category)) return 'hospitalier';
+  // Catégorie III = individual doctor names = private practices
+  if (/cat[ée]gorie\s+III\b/i.test(est.category)) return 'ambulatoire';
+
+  // 2. Name-based signals
+  if (/spital|h[oô]pital|klinik|cliniqu|centre hospitalier|inselspital|kantonsspital|universit[aä]tsspital|hug\b|chuv\b|eoc\b|hirslanden/i.test(est.name)) return 'hospitalier';
+  if (/praxis|cabinet|ambulatorium|ambulatoire/i.test(est.name)) return 'ambulatoire';
+
+  // 3. Recognized / university categories → typically hospitals
+  if (/voll anerkannt|universit[aä]r|nicht-universit[aä]r/i.test(est.category)) return 'hospitalier';
+
+  return 'autre';
+}
+
 // Singleton caches
 let _establishments = null;
 let _specialties = null;
@@ -26,7 +51,8 @@ export async function loadEstablishments() {
   if (_establishments) return _establishments;
   const res = await fetch('/data/establishments.json');
   if (!res.ok) throw new Error('Impossible de charger les établissements');
-  _establishments = await res.json();
+  const raw = await res.json();
+  _establishments = raw.map(e => ({ ...e, setting: classifySetting(e) }));
   return _establishments;
 }
 

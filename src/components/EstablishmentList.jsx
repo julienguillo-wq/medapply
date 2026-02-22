@@ -199,7 +199,11 @@ export default function EstablishmentList({ establishments, selectionMode = fals
                 </div>
               )}
               <div className="min-w-0">
-                <div className="font-semibold truncate">{est.name}</div>
+                <div className="font-semibold truncate flex items-center gap-1.5">
+                  {est.name}
+                  {est.setting === 'hospitalier' && <span title="Hospitalier" className="text-[11px] shrink-0">{'\uD83C\uDFE5'}</span>}
+                  {est.setting === 'ambulatoire' && <span title="Ambulatoire" className="text-[11px] shrink-0">{'\uD83C\uDFE2'}</span>}
+                </div>
                 <div className="text-[13px] text-gray-400">{est.city}{est.canton ? ` (${est.canton})` : ''}</div>
               </div>
               {hasScores && (

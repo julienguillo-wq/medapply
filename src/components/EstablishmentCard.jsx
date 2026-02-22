@@ -73,6 +73,12 @@ export default function EstablishmentCard({ establishment, onApply }) {
       <div className="flex flex-wrap gap-1.5 mb-3">
         {specialty && <Badge variant="primary">{specialty}</Badge>}
         {category && <Badge>{category}</Badge>}
+        {establishment.setting === 'hospitalier' && (
+          <Badge><span className="opacity-70">{'\uD83C\uDFE5'}</span> Hospitalier</Badge>
+        )}
+        {establishment.setting === 'ambulatoire' && (
+          <Badge><span className="opacity-70">{'\uD83C\uDFE2'}</span> Ambulatoire</Badge>
+        )}
       </div>
 
       {director && (

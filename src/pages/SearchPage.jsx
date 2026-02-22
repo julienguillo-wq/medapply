@@ -26,6 +26,9 @@ export default function SearchPage() {
     filtered,
     totalCount,
     emailStats,
+    settingFilter,
+    setSettingFilter,
+    settingCounts,
     sortBy,
     setSortBy,
     hasProfile,
@@ -236,7 +239,7 @@ export default function SearchPage() {
       {/* Establishment list */}
       {!loading && showingFiltered && (
         <div className="mt-7">
-          {/* Sort + Email stats + Selection mode bar */}
+          {/* Sort + Setting filter + Selection mode bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               {hasProfile && (
@@ -259,6 +262,23 @@ export default function SearchPage() {
                   </button>
                 </div>
               )}
+              <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-0.5">
+                {[
+                  { key: 'all', label: 'Tous' },
+                  { key: 'hospitalier', label: 'Hospitalier', icon: '\uD83C\uDFE5' },
+                  { key: 'ambulatoire', label: 'Ambulatoire', icon: '\uD83C\uDFE2' },
+                ].map(({ key, label, icon }) => (
+                  <button
+                    key={key}
+                    onClick={() => setSettingFilter(key)}
+                    className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors cursor-pointer ${
+                      settingFilter === key ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {icon ? `${icon} ` : ''}{label}{key !== 'all' && settingCounts[key] != null ? ` (${settingCounts[key]})` : ''}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <Button

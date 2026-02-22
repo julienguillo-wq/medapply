@@ -21,6 +21,7 @@ export default function useSiwfData() {
 
   const [selectedCantons, setSelectedCantons] = useState([]);
   const [selectedSpecialties, setSelectedSpecialties] = useState([]);
+  const [settingFilter, setSettingFilter] = useState('all'); // 'all' | 'hospitalier' | 'ambulatoire'
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [sortBy, setSortBy] = useState('score'); // 'score' | 'name'
@@ -100,6 +101,15 @@ export default function useSiwfData() {
     }
   }, [loading, user?.id]);
 
+  // Setting counts (computed over all establishments, independent of other filters)
+  const settingCounts = useMemo(() => {
+    const counts = { hospitalier: 0, ambulatoire: 0, autre: 0 };
+    for (const e of allEstablishments) {
+      if (e.setting in counts) counts[e.setting]++;
+    }
+    return counts;
+  }, [allEstablishments]);
+
   // Filtered establishments with scores
   const filtered = useMemo(() => {
     let results = filterEstablishments(allEstablishments, {
@@ -107,6 +117,11 @@ export default function useSiwfData() {
       specialties: selectedSpecialties,
       query: debouncedQuery,
     });
+
+    // Apply setting filter
+    if (settingFilter !== 'all') {
+      results = results.filter(e => e.setting === settingFilter);
+    }
 
     // Calculate scores if profile is available
     if (profile) {
@@ -122,7 +137,7 @@ export default function useSiwfData() {
     }
 
     return results;
-  }, [allEstablishments, selectedCantons, selectedSpecialties, debouncedQuery, profile, parcoursStages, sortBy]);
+  }, [allEstablishments, selectedCantons, selectedSpecialties, debouncedQuery, settingFilter, profile, parcoursStages, sortBy]);
 
   // Email validation stats for filtered results
   const emailStats = useMemo(() => {
@@ -153,6 +168,9 @@ export default function useSiwfData() {
     filtered,
     totalCount: allEstablishments.length,
     emailStats,
+    settingFilter,
+    setSettingFilter,
+    settingCounts,
     sortBy,
     setSortBy,
     hasProfile,
