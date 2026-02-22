@@ -10,52 +10,64 @@ import { createCandidature, updateCandidature } from '../services/candidaturesSe
 import { getEmailConfig, sendApplication } from '../services/emailConfigService';
 import { getDocuments } from '../services/documentsService';
 
-// Construit une formule d'appel personnalisée à partir du nom brut du directeur
-// Ex: "Herr Prof. Dr. med. Hans Müller" → "Monsieur le Professeur Müller"
-// Ex: "Frau Dr. med. Anna Schmidt" → "Madame la Docteure Schmidt"
-function buildSalutation(rawDirector) {
-  if (!rawDirector) return 'Madame, Monsieur';
+// Parse le nom brut du directeur pour extraire genre, titre, nom de famille
+function parseDirectorInfo(rawDirector) {
+  if (!rawDirector) return { salutation: 'Madame, Monsieur', closing: 'Madame, Monsieur' };
 
   const raw = rawDirector.trim();
 
-  // Détecter le genre via le préfixe allemand Herr/Frau
   const isFemale = /^Frau\b/i.test(raw);
   const isMale = /^Herr\b/i.test(raw);
 
-  // Retirer les préfixes/titres pour extraire le nom de famille
   const cleaned = raw
     .replace(/^(Herr|Frau)\s+/i, '')
     .replace(/\b(Prof\.|PD|Dr\.|med\.|phil\.|sc\.|rer\.|nat\.|habil\.)\s*/gi, '')
     .trim();
 
-  // Le nom de famille est le dernier mot
   const parts = cleaned.split(/\s+/);
   const lastName = parts[parts.length - 1] || cleaned;
 
-  // Détecter le titre académique le plus élevé
   const hasProf = /\bProf\./i.test(raw);
   const hasPD = /\bPD\b/i.test(raw);
   const hasDr = /\bDr\./i.test(raw);
 
   if (!isFemale && !isMale) {
-    // Genre inconnu : formule avec titre si disponible
-    if (hasProf || hasPD) return `Monsieur le Professeur / Madame la Professeure ${lastName}`;
-    if (hasDr) return `Monsieur le Docteur / Madame la Docteure ${lastName}`;
-    return 'Madame, Monsieur';
+    if (hasProf || hasPD) {
+      return {
+        salutation: `Monsieur le Professeur / Madame la Professeure ${lastName}`,
+        closing: `Professeur ${lastName}`,
+      };
+    }
+    if (hasDr) {
+      return {
+        salutation: `Monsieur le Docteur / Madame la Docteure ${lastName}`,
+        closing: `Docteur ${lastName}`,
+      };
+    }
+    return { salutation: 'Madame, Monsieur', closing: 'Madame, Monsieur' };
   }
 
   const civility = isFemale ? 'Madame' : 'Monsieur';
 
   if (hasProf || hasPD) {
     const title = isFemale ? 'la Professeure' : 'le Professeur';
-    return `${civility} ${title} ${lastName}`;
+    return {
+      salutation: `${civility} ${title} ${lastName}`,
+      closing: `Professeur ${lastName}`,
+    };
   }
   if (hasDr) {
     const title = isFemale ? 'la Docteure' : 'le Docteur';
-    return `${civility} ${title} ${lastName}`;
+    return {
+      salutation: `${civility} ${title} ${lastName}`,
+      closing: `Docteur ${lastName}`,
+    };
   }
 
-  return `${civility} ${lastName}`;
+  return {
+    salutation: `${civility} ${lastName}`,
+    closing: `${civility} ${lastName}`,
+  };
 }
 
 export default function ApplicationModal({ establishment, existingCandidature, onClose, onSaved }) {
@@ -63,7 +75,7 @@ export default function ApplicationModal({ establishment, existingCandidature, o
 
   const emailInfo = getEmail(establishment);
   const directorClean = cleanDirector(establishment.director);
-  const salutation = buildSalutation(establishment.director);
+  const { salutation, closing } = parseDirectorInfo(establishment.director);
 
   const [letter, setLetter] = useState(existingCandidature?.motivation_letter || '');
   const [generating, setGenerating] = useState(false);
@@ -94,14 +106,22 @@ export default function ApplicationModal({ establishment, existingCandidature, o
   const userName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || user?.email || '';
   const userSpecialty = profile?.specialty || '';
 
+  // Build signature title based on user gender
+  const signatureTitle = profile?.gender === 'F'
+    ? 'Médecin assistante'
+    : profile?.gender === 'M'
+      ? 'Médecin assistant'
+      : 'Médecin assistant(e)';
+
   function handleGenerate() {
-    const directorName = directorClean || 'Madame, Monsieur';
-    setLetter(`Cher Docteur ${directorName},
+    setLetter(`Cher ${salutation},
 
-Je m\u2019appelle Giulia Scattu et je souhaite d\u00e9poser ma candidature pour un poste de m\u00e9decin assistante au sein de votre service. J\u2019ai obtenu mon dipl\u00f4me en m\u00e9decine et chirurgie \u00e0 l\u2019Universit\u00e9 Vest Vasile Goldis d\u2019Arad (Roumanie) le 14 septembre 2024. D\u00e8s la fin de ma premi\u00e8re ann\u00e9e d\u2019\u00e9tudes, j\u2019ai effectu\u00e9 plusieurs stages pratiques dans des h\u00f4pitaux en Italie, en Roumanie et en Suisse. Plus r\u00e9cemment, j\u2019ai eu l\u2019opportunit\u00e9 d\u2019effectuer un stage \u00e0 l\u2019UGA de La Chaux-de-Fonds, ainsi que ma premi\u00e8re ann\u00e9e de formation en rotation entre le service de r\u00e9adaptation musculo squelettique et neurologique de Val-de-Ruz et l\u2019UGA de La Chaux-de-Fonds, et \u00e0 partir de Mai 2026 je serai dans le service des urgences de Neuch\u00e2tel. \u00c0 partir d\u2019octobre 2024, apr\u00e8s l\u2019obtention de mon dipl\u00f4me, je participerai \u00e9galement \u00e0 un stage organis\u00e9 par le Rotary en France, d\u2019abord en oncologie, puis en cardiologie \u00e0 Beauvais. Je souhaiterais vivement int\u00e9grer votre service en qualit\u00e9 de m\u00e9decin assistante \u00e0 partir du 1er Mai 2027. En esp\u00e9rant que ma candidature retiendra votre attention, je reste \u00e0 votre disposition pour toute information compl\u00e9mentaire et je vous prie d\u2019agr\u00e9er, Madame, Monsieur, l\u2019expression de mes salutations distingu\u00e9es.
+Je m\u2019appelle Giulia Scattu et je souhaite d\u00e9poser ma candidature pour un poste de m\u00e9decin assistante au sein de votre service. J\u2019ai obtenu mon dipl\u00f4me en m\u00e9decine et chirurgie \u00e0 l\u2019Universit\u00e9 Vest Vasile Goldis d\u2019Arad (Roumanie) le 14 septembre 2024. D\u00e8s la fin de ma premi\u00e8re ann\u00e9e d\u2019\u00e9tudes, j\u2019ai effectu\u00e9 plusieurs stages pratiques dans des h\u00f4pitaux en Italie, en Roumanie et en Suisse. Plus r\u00e9cemment, j\u2019ai eu l\u2019opportunit\u00e9 d\u2019effectuer un stage \u00e0 l\u2019UGA de La Chaux-de-Fonds, ainsi que ma premi\u00e8re ann\u00e9e de formation en rotation entre le service de r\u00e9adaptation musculo squelettique et neurologique de Val-de-Ruz et l\u2019UGA de La Chaux-de-Fonds, et \u00e0 partir de Mai 2026 je serai dans le service des urgences de Neuch\u00e2tel. \u00c0 partir d\u2019octobre 2024, apr\u00e8s l\u2019obtention de mon dipl\u00f4me, je participerai \u00e9galement \u00e0 un stage organis\u00e9 par le Rotary en France, d\u2019abord en oncologie, puis en cardiologie \u00e0 Beauvais. Je souhaiterais vivement int\u00e9grer votre service en qualit\u00e9 de ${signatureTitle.toLowerCase()} \u00e0 partir du 1er Mai 2027.
 
-Mes meilleures salutations,
-Giulia Scattu`);
+En esp\u00e9rant que ma candidature retiendra votre attention, je reste \u00e0 votre disposition pour toute information compl\u00e9mentaire et je vous prie d\u2019agr\u00e9er, ${closing}, l\u2019expression de mes salutations distingu\u00e9es.
+
+${userName}
+${signatureTitle}`);
   }
 
   async function handleSaveDraft() {
