@@ -13,7 +13,7 @@ const modes = [
     hoverShadow: 'rgba(0,102,255,0.35)',
     bg: 'bg-primary-bg',
     text: 'text-primary',
-    path: '/profil',
+    path: '/dashboard',
     features: ['Profil & CV', 'Recherche de postes', 'Candidatures IA', 'Suivi des dossiers'],
   },
   {

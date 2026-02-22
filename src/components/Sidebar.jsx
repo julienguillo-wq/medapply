@@ -52,7 +52,7 @@ export default function Sidebar({ open, onClose }) {
 
         {/* Mode switch */}
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/mode')}
           className="flex items-center gap-2 px-4 py-2.5 mb-4 mx-3 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
         >
           <Icon.ChevronRight size={14} className="rotate-180" />

@@ -26,8 +26,11 @@ export default function App() {
       <AuthProvider>
         <AuthGuard>
           <Routes>
+            {/* Default: redirect to dashboard */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
             {/* Mode selector */}
-            <Route path="/" element={<ModeSelector />} />
+            <Route path="/mode" element={<ModeSelector />} />
 
             {/* Candidatures mode (existing app) */}
             <Route element={<Layout />}>
