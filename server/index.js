@@ -1128,6 +1128,81 @@ app.post('/api/sync-campaigns', async (req, res) => {
 });
 
 // ============================================================
+// Backfill Gmail thread IDs
+// ============================================================
+
+/**
+ * Pour un utilisateur, cherche les threadIds Gmail de toutes les
+ * candidatures envoyées qui n'ont pas encore de gmail_thread_id.
+ */
+async function backfillThreadIds(userId) {
+  const gmail = await getGmailClient(userId);
+  if (!gmail) return { updated: 0, checked: 0 };
+
+  const admin = getSupabaseAdmin();
+  const { data: candidatures } = await admin
+    .from('candidatures')
+    .select('id, director_email, sent_at')
+    .eq('user_id', userId)
+    .not('director_email', 'eq', '')
+    .not('sent_at', 'is', null)
+    .is('gmail_thread_id', null);
+
+  if (!candidatures || candidatures.length === 0) {
+    return { updated: 0, checked: 0 };
+  }
+
+  let updated = 0;
+
+  for (const cand of candidatures) {
+    try {
+      const res = await gmail.users.messages.list({
+        userId: 'me',
+        q: `to:${cand.director_email} in:sent`,
+        maxResults: 1,
+      });
+
+      if (!res.data.messages || res.data.messages.length === 0) continue;
+
+      const msg = res.data.messages[0];
+      await admin
+        .from('candidatures')
+        .update({
+          gmail_thread_id: msg.threadId,
+          gmail_message_id: msg.id,
+        })
+        .eq('id', cand.id);
+
+      updated++;
+    } catch (err) {
+      console.warn(`[backfill] Error for candidature ${cand.id}:`, err.message);
+    }
+  }
+
+  console.log(`[backfill] User ${userId}: ${updated}/${candidatures.length} thread IDs found`);
+  return { updated, checked: candidatures.length };
+}
+
+// POST /api/backfill-thread-ids
+app.post('/api/backfill-thread-ids', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token d\'authentification requis' });
+  }
+
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: 'userId requis' });
+
+  try {
+    const result = await backfillThreadIds(userId);
+    return res.json({ success: true, ...result });
+  } catch (err) {
+    console.error('[backfill-thread-ids] Error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
 // Gmail OAuth2 endpoints
 // ============================================================
 
@@ -1175,6 +1250,11 @@ app.get('/api/gmail/callback', async (req, res) => {
       }, { onConflict: 'user_id' });
 
     console.log(`[gmail] Tokens saved for user ${userId} (${gmailEmail})`);
+
+    // Backfill thread IDs pour les candidatures existantes (async, non-bloquant)
+    backfillThreadIds(userId).catch(err =>
+      console.warn('[gmail/callback] Backfill error:', err.message)
+    );
 
     // Rediriger vers le frontend
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
