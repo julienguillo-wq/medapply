@@ -329,7 +329,7 @@ function KanbanColumn({ col, cards, onUpdate, onSelect, onRelance, onDrop }) {
 
   return (
     <div
-      className={`flex flex-col min-w-[280px] w-[280px] shrink-0 rounded-2xl border transition-colors duration-200 ${
+      className={`flex flex-col flex-1 min-w-0 rounded-2xl border transition-colors duration-200 ${
         dragOver ? `${col.borderColor} ${col.bgColor}` : 'border-gray-200 bg-gray-50/50'
       }`}
       onDragOver={handleDragOver}
@@ -973,7 +973,7 @@ export default function ApplicationsPage() {
       {/* Kanban view */}
       {view === 'kanban' && (
         <>
-          <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2">
+          <div className="flex gap-4 w-full pb-4">
             {columns.map(col => (
               <KanbanColumn
                 key={col.id}
