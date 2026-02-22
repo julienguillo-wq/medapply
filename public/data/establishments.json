@@ -1105,6 +1105,19 @@
     "lng": 8.844540199999999
   },
   {
+    "id": 28390,
+    "name": "Alexandra Elena Dascal",
+    "canton": "FR",
+    "plz": "1607",
+    "city": "Palézieux-Village",
+    "director": "Frau Alexandra Elena Dascal",
+    "specialty": "Psychiatrie et psychothérapie",
+    "category": "Cabinets médicaux (1 an)",
+    "homepage": null,
+    "lat": 46.5547211,
+    "lng": 6.8289924
+  },
+  {
     "id": 22023,
     "name": "Alexandra Goll André",
     "canton": "BE",
@@ -1508,6 +1521,19 @@
     "lng": 8.7977441
   },
   {
+    "id": 28844,
+    "name": "Alice Sophia Bennani",
+    "canton": "VD",
+    "plz": "1110",
+    "city": "Morges",
+    "director": "Frau Alice Sophia Bennani",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie III (1 an)",
+    "homepage": null,
+    "lat": 46.5096498,
+    "lng": 6.494679499999999
+  },
+  {
     "id": 21786,
     "name": "Alina Svetoslavova Staikov",
     "canton": "ZH",
@@ -1524,14 +1550,14 @@
     "id": 27700,
     "name": "Alin-Constantin Toanchina",
     "canton": "VD",
-    "plz": "1814",
-    "city": "La Tour-de-Peilz",
+    "plz": "1844",
+    "city": "Villeneuve VD",
     "director": "Herr Alin-Constantin Toanchina",
     "specialty": "Psychiatrie et psychothérapie",
     "category": "Cabinets médicaux (1 an)",
     "homepage": null,
-    "lat": 46.451802400000005,
-    "lng": 6.859991099999999
+    "lat": 46.395214,
+    "lng": 6.9241687
   },
   {
     "id": 26274,
@@ -3389,8 +3415,8 @@
     "specialty": "Pédiatrie",
     "category": "Cabinets médicaux (1 an)",
     "homepage": null,
-    "lat": 47.365955,
-    "lng": 8.5485468
+    "lat": 47.3900089,
+    "lng": 8.5324895
   },
   {
     "id": 27051,
@@ -7376,7 +7402,7 @@
     "canton": "SO",
     "plz": "4500",
     "city": "Solothurn",
-    "director": "Herr Prof. Dr. med. Carlos Buitrago-Tellez",
+    "director": "Herr Prof. Dr. med. Carlos Hernando Buitrago Tellez",
     "specialty": "Radiologie",
     "category": "Catégorie A (4 ans)",
     "homepage": null,
@@ -9087,6 +9113,19 @@
     "lng": 7.5864604
   },
   {
+    "id": 28393,
+    "name": "Caroline Eva Christoffel Courtin",
+    "canton": "GR",
+    "plz": "7000",
+    "city": "Chur",
+    "director": "Frau Dr. med. Caroline Eva Christoffel Courtin",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie III (1 an)",
+    "homepage": null,
+    "lat": null,
+    "lng": null
+  },
+  {
     "id": 27103,
     "name": "Caroline Marguerithe Collin",
     "canton": "GE",
@@ -9098,6 +9137,19 @@
     "homepage": null,
     "lat": 46.203323600000004,
     "lng": 6.1617949
+  },
+  {
+    "id": 28430,
+    "name": "Caroline Moser",
+    "canton": "BE",
+    "plz": "3013",
+    "city": "Bern",
+    "director": "Frau Dr. med. Caroline Moser",
+    "specialty": "Rhumatologie",
+    "category": "Catégorie C (1 an) / Cabinets médicaux",
+    "homepage": null,
+    "lat": 46.954743199999996,
+    "lng": 7.4514541
   },
   {
     "id": 22545,
@@ -9954,8 +10006,8 @@
     "specialty": "Pédiatrie",
     "category": "Cabinets médicaux (1 an)",
     "homepage": null,
-    "lat": 47.3727496,
-    "lng": 8.080993699999999
+    "lat": 47.380701499999994,
+    "lng": 8.0684197
   },
   {
     "id": 22613,
@@ -9995,6 +10047,19 @@
     "homepage": null,
     "lat": 46.5387821,
     "lng": 6.7340468
+  },
+  {
+    "id": 27875,
+    "name": "Christelle Brönnimann",
+    "canton": "BE",
+    "plz": "2575",
+    "city": "Täuffelen",
+    "director": "Frau Dr. med. Christelle Brönnimann",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie III (1 an)",
+    "homepage": null,
+    "lat": 47.0663285,
+    "lng": 7.2012934
   },
   {
     "id": 23115,
@@ -10242,6 +10307,19 @@
     "homepage": null,
     "lat": 47.5275775,
     "lng": 7.5790047000000005
+  },
+  {
+    "id": 28567,
+    "name": "Christian Joost",
+    "canton": "SO",
+    "plz": "4436",
+    "city": "Oberdorf BL",
+    "director": "Herr Dr. med. Christian Joost",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie III (1 an)",
+    "homepage": null,
+    "lat": 47.392164699999995,
+    "lng": 7.7494047
   },
   {
     "id": 22697,
@@ -10944,6 +11022,19 @@
     "homepage": null,
     "lat": 47.5128541,
     "lng": 8.7214592
+  },
+  {
+    "id": 27627,
+    "name": "Christoph Broens",
+    "canton": "AG",
+    "plz": "5400",
+    "city": "Baden",
+    "director": "Herr Christoph Broens",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie III (1 an)",
+    "homepage": null,
+    "lat": 47.47277439999999,
+    "lng": 8.3081633
   },
   {
     "id": 16700,
@@ -13039,6 +13130,19 @@
     "lng": 8.5624123
   },
   {
+    "id": 28541,
+    "name": "Constance Rey",
+    "canton": "VD",
+    "plz": "1890",
+    "city": "St-Maurice",
+    "director": "Frau Dr. med. Constance Rey",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie III (1 an)",
+    "homepage": null,
+    "lat": null,
+    "lng": null
+  },
+  {
     "id": 22155,
     "name": "Constantin Johannes Ahlbrand",
     "canton": "VS",
@@ -13089,19 +13193,6 @@
     "homepage": null,
     "lat": 46.253621200000005,
     "lng": 6.950613499999999
-  },
-  {
-    "id": 22482,
-    "name": "Cordula Giebel",
-    "canton": "LU",
-    "plz": "6206",
-    "city": "Neuenkirch",
-    "director": "Frau Dr. med. Cordula Giebel",
-    "specialty": "Médecine interne générale",
-    "category": "Catégorie III (1 an)",
-    "homepage": null,
-    "lat": 47.100653799999996,
-    "lng": 8.1972754
   },
   {
     "id": 22446,
@@ -13589,13 +13680,13 @@
     "name": "Daniel Blumberg",
     "canton": "TI",
     "plz": "6600",
-    "city": "Locarno",
+    "city": "Muralto",
     "director": "Herr Dr. med. Daniel Blumberg",
     "specialty": "Pédiatrie",
     "category": "Cabinets médicaux (1 an)",
     "homepage": null,
-    "lat": 46.157360000000004,
-    "lng": 8.7740915
+    "lat": null,
+    "lng": null
   },
   {
     "id": 22576,
@@ -15522,6 +15613,19 @@
     "lng": 8.5811587
   },
   {
+    "id": 28361,
+    "name": "Dorian Schaller",
+    "canton": "GE",
+    "plz": "1222",
+    "city": "Vésenaz",
+    "director": "Herr Dorian Schaller",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie III (1 an)",
+    "homepage": null,
+    "lat": 46.2386147,
+    "lng": 6.196781199999999
+  },
+  {
     "id": 21914,
     "name": "Doris Auf der Maur",
     "canton": "UR",
@@ -16259,8 +16363,8 @@
     "specialty": "Médecine interne générale",
     "category": "Catégorie III (1 an)",
     "homepage": null,
-    "lat": 47.369463800000005,
-    "lng": 8.517672600000001
+    "lat": 47.371116099999995,
+    "lng": 8.5228736
   },
   {
     "id": 27422,
@@ -19470,8 +19574,8 @@
     "specialty": "Médecine interne générale",
     "category": "Catégorie III (1 an)",
     "homepage": null,
-    "lat": 47.1136155,
-    "lng": 7.8439293
+    "lat": 47.1143719,
+    "lng": 7.8454727
   },
   {
     "id": 23744,
@@ -21927,8 +22031,8 @@
     "specialty": "Allergologie et immunologie clinique",
     "category": "Catégorie Aa (2 ans)",
     "homepage": null,
-    "lat": 46.194040199999996,
-    "lng": 6.1484351
+    "lat": 46.193884600000004,
+    "lng": 6.1489534
   },
   {
     "id": 17247,
@@ -21940,8 +22044,8 @@
     "specialty": "Allergologie et immunologie clinique",
     "category": "Catégorie Ai (2 ans)",
     "homepage": null,
-    "lat": 46.194040199999996,
-    "lng": 6.1484351
+    "lat": 46.193884600000004,
+    "lng": 6.1489534
   },
   {
     "id": 17370,
@@ -25649,19 +25753,6 @@
     "lng": 9.38883
   },
   {
-    "id": 21486,
-    "name": "HOCH - Kantonsspital St. Gallen",
-    "canton": "SG",
-    "plz": "9007",
-    "city": "St. Gallen",
-    "director": "Herr Prof. Dr. med. Christoph Driessen",
-    "specialty": "Oncologie médicale",
-    "category": "Catégorie A (4 ans)",
-    "homepage": null,
-    "lat": 47.429877,
-    "lng": 9.38883
-  },
-  {
     "id": 21706,
     "name": "HOCH - Kantonsspital St. Gallen",
     "canton": "SG",
@@ -25805,45 +25896,6 @@
     "lng": 9.38883
   },
   {
-    "id": 25174,
-    "name": "HOCH - Kantonsspital St. Gallen",
-    "canton": "SG",
-    "plz": "9007",
-    "city": "St. Gallen",
-    "director": "Herr Prof. Dr. med. Christoph Driessen",
-    "specialty": "Hématologie",
-    "category": "Catégorie D1 (1 an), Blutspendedienst",
-    "homepage": null,
-    "lat": 47.429877,
-    "lng": 9.38883
-  },
-  {
-    "id": 25175,
-    "name": "HOCH - Kantonsspital St. Gallen",
-    "canton": "SG",
-    "plz": "9007",
-    "city": "St. Gallen",
-    "director": "Herr Prof. Dr. med. Christoph Driessen",
-    "specialty": "Hématologie",
-    "category": "Catégorie D3 (1 an), Forschung",
-    "homepage": null,
-    "lat": 47.429877,
-    "lng": 9.38883
-  },
-  {
-    "id": 25176,
-    "name": "HOCH - Kantonsspital St. Gallen",
-    "canton": "SG",
-    "plz": "9007",
-    "city": "St. Gallen",
-    "director": "Herr Prof. Dr. med. Christoph Driessen",
-    "specialty": "Hématologie",
-    "category": "Catégorie D2 (1 an), Labor",
-    "homepage": null,
-    "lat": 47.429877,
-    "lng": 9.38883
-  },
-  {
     "id": 25210,
     "name": "HOCH - Kantonsspital St. Gallen",
     "canton": "SG",
@@ -25852,19 +25904,6 @@
     "director": "Herr Prof. Dr. med. Christophe Valmaggia",
     "specialty": "Ophtalmologie",
     "category": "Catégorie A1 (3 ans)",
-    "homepage": null,
-    "lat": 47.429877,
-    "lng": 9.38883
-  },
-  {
-    "id": 25361,
-    "name": "HOCH - Kantonsspital St. Gallen",
-    "canton": "SG",
-    "plz": "9007",
-    "city": "St. Gallen",
-    "director": "Herr Prof. Dr. med. Christoph Driessen",
-    "specialty": "Hématologie",
-    "category": "Catégorie A (4 ans)",
     "homepage": null,
     "lat": 47.429877,
     "lng": 9.38883
@@ -26138,6 +26177,71 @@
     "director": "Herr Dr. med. Christian Bucher",
     "specialty": "Néphrologie",
     "category": "Catégorie B (1 1/2 ans)",
+    "homepage": null,
+    "lat": 47.429877,
+    "lng": 9.38883
+  },
+  {
+    "id": 28846,
+    "name": "HOCH - Kantonsspital St. Gallen",
+    "canton": "SG",
+    "plz": "9007",
+    "city": "St. Gallen",
+    "director": "Herr Dr. med. Martin Früh",
+    "specialty": "Oncologie médicale",
+    "category": "Catégorie A (4 ans)",
+    "homepage": null,
+    "lat": 47.429877,
+    "lng": 9.38883
+  },
+  {
+    "id": 28848,
+    "name": "HOCH - Kantonsspital St. Gallen",
+    "canton": "SG",
+    "plz": "9007",
+    "city": "St. Gallen",
+    "director": "Herr Dr. med. Thomas Lehmann",
+    "specialty": "Hématologie",
+    "category": "Catégorie A (4 ans)",
+    "homepage": null,
+    "lat": 47.429877,
+    "lng": 9.38883
+  },
+  {
+    "id": 28849,
+    "name": "HOCH - Kantonsspital St. Gallen",
+    "canton": "SG",
+    "plz": "9007",
+    "city": "St. Gallen",
+    "director": "Herr Dr. med. Thomas Lehmann",
+    "specialty": "Hématologie",
+    "category": "Catégorie D1 (1 an), Blutspendedienst",
+    "homepage": null,
+    "lat": 47.429877,
+    "lng": 9.38883
+  },
+  {
+    "id": 28850,
+    "name": "HOCH - Kantonsspital St. Gallen",
+    "canton": "SG",
+    "plz": "9007",
+    "city": "St. Gallen",
+    "director": "Herr Dr. med. Thomas Lehmann",
+    "specialty": "Hématologie",
+    "category": "Catégorie D2 (1 an), Labor",
+    "homepage": null,
+    "lat": 47.429877,
+    "lng": 9.38883
+  },
+  {
+    "id": 28851,
+    "name": "HOCH - Kantonsspital St. Gallen",
+    "canton": "SG",
+    "plz": "9007",
+    "city": "St. Gallen",
+    "director": "Herr Dr. med. Thomas Lehmann",
+    "specialty": "Hématologie",
+    "category": "Catégorie D3 (1 an), Forschung",
     "homepage": null,
     "lat": 47.429877,
     "lng": 9.38883
@@ -30269,7 +30373,7 @@
     "canton": "AG",
     "plz": "5200",
     "city": "Brugg AG",
-    "director": "Herr Iraklis Vastardis",
+    "director": "Herr Dr. med. Iraklis Vastardis",
     "specialty": "Ophtalmologie",
     "category": "Catégorie D1 / Cabinets médicaux (6 Monate)",
     "homepage": null,
@@ -30282,7 +30386,7 @@
     "canton": "AG",
     "plz": "5200",
     "city": "Brugg AG",
-    "director": "Herr Iraklis Vastardis",
+    "director": "Herr Dr. med. Iraklis Vastardis",
     "specialty": "Ophtalmochirurgie",
     "category": "Catégorie D2 / Cabinets médicaux (1 an)",
     "homepage": null,
@@ -30496,6 +30600,19 @@
     "homepage": null,
     "lat": 47.033417,
     "lng": 8.4276346
+  },
+  {
+    "id": 28855,
+    "name": "Isabelle Müntener-Müller",
+    "canton": "SH",
+    "plz": "8201",
+    "city": "Schaffhausen",
+    "director": "Frau Dr. med. Isabelle Müntener-Müller",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie III (1 an)",
+    "homepage": null,
+    "lat": 47.6971887,
+    "lng": 8.6360735
   },
   {
     "id": 25895,
@@ -30886,19 +31003,6 @@
     "homepage": null,
     "lat": 47.047036500000004,
     "lng": 8.3143777
-  },
-  {
-    "id": 22518,
-    "name": "Jalil Rouijel",
-    "canton": "GE",
-    "plz": "1218",
-    "city": "Le Grand-Saconnex",
-    "director": "Herr Jalil Rouijel",
-    "specialty": "Médecine interne générale",
-    "category": "Catégorie III (1 an)",
-    "homepage": null,
-    "lat": 46.2384627,
-    "lng": 6.122154800000001
   },
   {
     "id": 27581,
@@ -33241,19 +33345,6 @@
     "lng": 8.0457015
   },
   {
-    "id": 12743,
-    "name": "Kantonsspital Aarau AG",
-    "canton": "AG",
-    "plz": "5001",
-    "city": "Aarau",
-    "director": "Herr Dr. med. Peter Eng",
-    "specialty": "Pneumologie pédiatrique",
-    "category": "Catégorie B (2 ans)",
-    "homepage": null,
-    "lat": 47.390434,
-    "lng": 8.0457015
-  },
-  {
     "id": 12877,
     "name": "Kantonsspital Aarau AG",
     "canton": "AG",
@@ -33964,6 +34055,19 @@
     "director": "Herr Dr. med. Matthias Benz",
     "specialty": "Médecine nucléaire",
     "category": "Catégorie A (4 ans)",
+    "homepage": null,
+    "lat": 47.390434,
+    "lng": 8.0457015
+  },
+  {
+    "id": 28860,
+    "name": "Kantonsspital Aarau AG",
+    "canton": "AG",
+    "plz": "5001",
+    "city": "Aarau",
+    "director": "Frau Dr. med. Tina Schürmann",
+    "specialty": "Pneumologie pédiatrique",
+    "category": "Catégorie B (2 ans)",
     "homepage": null,
     "lat": 47.390434,
     "lng": 8.0457015
@@ -38948,45 +39052,6 @@
     "lng": 7.7742
   },
   {
-    "id": 28802,
-    "name": "Klinik Siloah AG",
-    "canton": "BE",
-    "plz": "3073",
-    "city": "Gümligen",
-    "director": "Herr Dr. med. Thierry Gigandet",
-    "specialty": "Médecine interne générale",
-    "category": "Catégorie C (1 an)",
-    "homepage": null,
-    "lat": 46.932265,
-    "lng": 7.5179077
-  },
-  {
-    "id": 28803,
-    "name": "Klinik Siloah AG",
-    "canton": "BE",
-    "plz": "3073",
-    "city": "Gümligen",
-    "director": "Herr Dr. med. Thierry Gigandet",
-    "specialty": "Médecine interne générale",
-    "category": "Catégorie II (1 1/2 ans)",
-    "homepage": null,
-    "lat": 46.932265,
-    "lng": 7.5179077
-  },
-  {
-    "id": 28804,
-    "name": "Klinik Siloah AG",
-    "canton": "BE",
-    "plz": "3073",
-    "city": "Gümligen",
-    "director": "Herr Dr. med. Thierry Gigandet",
-    "specialty": "Gériatrie",
-    "category": "Catégorie A (2 1/2 ans)",
-    "homepage": null,
-    "lat": 46.932265,
-    "lng": 7.5179077
-  },
-  {
     "id": 25382,
     "name": "Klinik St. Anna",
     "canton": "LU",
@@ -41689,6 +41754,19 @@
     "homepage": null,
     "lat": 47.16893,
     "lng": 8.118039900000001
+  },
+  {
+    "id": 28599,
+    "name": "Luzerner Kantonsspital LUKS Sursee",
+    "canton": "LU",
+    "plz": "6210",
+    "city": "Sursee",
+    "director": "Herr Dr. med. Joerg Nossen",
+    "specialty": "Cardiologie",
+    "category": "Catégorie C (1 an)",
+    "homepage": null,
+    "lat": 47.1683801,
+    "lng": 8.1177646
   },
   {
     "id": 16851,
@@ -45685,14 +45763,14 @@
     "id": 23307,
     "name": "Meret Furrer",
     "canton": "BE",
-    "plz": "3006",
-    "city": "Bern",
+    "plz": "3054",
+    "city": "Schüpfen",
     "director": "Frau Dr. med. Meret Furrer",
     "specialty": "Médecine interne générale",
     "category": "Catégorie III (1 an)",
     "homepage": null,
-    "lat": 46.941501099999996,
-    "lng": 7.4598173999999995
+    "lat": 47.0405122,
+    "lng": 7.3782646000000005
   },
   {
     "id": 27707,
@@ -46564,6 +46642,19 @@
     "homepage": null,
     "lat": 47.46586550000001,
     "lng": 8.3225614
+  },
+  {
+    "id": 28811,
+    "name": "Michèle Senn-Scherer",
+    "canton": "FR",
+    "plz": "1607",
+    "city": "Palézieux-Village",
+    "director": "Frau Dr. med. Michèle Senn-Scherer",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie III (1 an)",
+    "homepage": null,
+    "lat": 46.5432907,
+    "lng": 6.8409219
   },
   {
     "id": 27692,
@@ -47515,6 +47606,19 @@
     "lng": 7.661633200000001
   },
   {
+    "id": 28620,
+    "name": "Neurocentre - Centre du dos SA",
+    "canton": "VD",
+    "plz": "1003",
+    "city": "Lausanne",
+    "director": "Herr Dr. med. Jimmy Villard",
+    "specialty": "Neurochirurgie",
+    "category": "Catégorie C (1 an)",
+    "homepage": null,
+    "lat": 46.5199439,
+    "lng": 6.6238063
+  },
+  {
     "id": 26500,
     "name": "Neurologische Praxis Luzern",
     "canton": "LU",
@@ -47786,32 +47890,6 @@
     "homepage": null,
     "lat": 47.5459436,
     "lng": 7.5856813999999995
-  },
-  {
-    "id": 16734,
-    "name": "Nicolas Wetterwald",
-    "canton": "BE",
-    "plz": "3011",
-    "city": "Bern",
-    "director": "Herr Dr. med. Nicolas Wetterwald",
-    "specialty": "Ophtalmochirurgie",
-    "category": "Catégorie D2 / Cabinets médicaux (1 an)",
-    "homepage": null,
-    "lat": 46.515717599999995,
-    "lng": 6.682536099999999
-  },
-  {
-    "id": 25280,
-    "name": "Nicolas Wetterwald",
-    "canton": "BE",
-    "plz": "3011",
-    "city": "Bern",
-    "director": "Herr Dr. med. Nicolas Wetterwald",
-    "specialty": "Ophtalmologie",
-    "category": "Catégorie D1 / Cabinets médicaux (6 Monate)",
-    "homepage": null,
-    "lat": 46.515717599999995,
-    "lng": 6.682536099999999
   },
   {
     "id": 27766,
@@ -48202,19 +48280,6 @@
     "homepage": null,
     "lat": 47.1078398,
     "lng": 7.362423499999999
-  },
-  {
-    "id": 23600,
-    "name": "Norbert Stettler",
-    "canton": "SH",
-    "plz": "8234",
-    "city": "Stetten SH",
-    "director": "Herr Dr. med. Norbert Stettler",
-    "specialty": "Médecine interne générale",
-    "category": "Catégorie III (1 an)",
-    "homepage": null,
-    "lat": 47.739097099999995,
-    "lng": 8.6621219
   },
   {
     "id": 23939,
@@ -50159,7 +50224,7 @@
     "canton": "AG",
     "plz": "5405",
     "city": "Dättwil AG",
-    "director": "Herr Dr. med. Rafael Meyer",
+    "director": "Herr Dr. med. Rafael Serafin Meyer",
     "specialty": "Psychiatrie et psychothérapie",
     "category": "Catégorie A (3 ans) ambulant",
     "homepage": null,
@@ -50776,19 +50841,6 @@
     "homepage": null,
     "lat": 47.48121880000001,
     "lng": 8.454170699999999
-  },
-  {
-    "id": 22532,
-    "name": "Peter Wild",
-    "canton": "AR",
-    "plz": "9100",
-    "city": "Herisau",
-    "director": "Herr Dr. med. Peter Wild",
-    "specialty": "Médecine interne générale",
-    "category": "Catégorie III (1 an)",
-    "homepage": null,
-    "lat": 47.387791299999996,
-    "lng": 9.284483999999999
   },
   {
     "id": 23148,
@@ -51623,6 +51675,58 @@
     "lng": 9.4199825
   },
   {
+    "id": 27888,
+    "name": "Privatklinik Siloah",
+    "canton": "BE",
+    "plz": "3073",
+    "city": "Gümligen",
+    "director": "Herr Dr. med. Andreas J. Schuster",
+    "specialty": "Chirurgie orthopédique et traumatologie de l'appareil locomoteur",
+    "category": "Catégorie C (1 an)",
+    "homepage": null,
+    "lat": 46.932265,
+    "lng": 7.5179077
+  },
+  {
+    "id": 28802,
+    "name": "Privatklinik Siloah AG",
+    "canton": "BE",
+    "plz": "3073",
+    "city": "Gümligen",
+    "director": "Herr Dr. med. Thierry Gigandet",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie C (1 an)",
+    "homepage": null,
+    "lat": 46.932265,
+    "lng": 7.5179077
+  },
+  {
+    "id": 28803,
+    "name": "Privatklinik Siloah AG",
+    "canton": "BE",
+    "plz": "3073",
+    "city": "Gümligen",
+    "director": "Herr Dr. med. Thierry Gigandet",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie II (1 1/2 ans)",
+    "homepage": null,
+    "lat": 46.932265,
+    "lng": 7.5179077
+  },
+  {
+    "id": 28804,
+    "name": "Privatklinik Siloah AG",
+    "canton": "BE",
+    "plz": "3073",
+    "city": "Gümligen",
+    "director": "Herr Dr. med. Thierry Gigandet",
+    "specialty": "Gériatrie",
+    "category": "Catégorie A (2 1/2 ans)",
+    "homepage": null,
+    "lat": 46.932265,
+    "lng": 7.5179077
+  },
+  {
     "id": 27778,
     "name": "Privatklinik Wyss AG",
     "canton": "BE",
@@ -52018,7 +52122,7 @@
     "canton": "AG",
     "plz": "5405",
     "city": "Dättwil AG",
-    "director": "Herr Dr. med. Rafael Meyer",
+    "director": "Herr Dr. med. Rafael Serafin Meyer",
     "specialty": "Psychiatrie de consultation et de liaison",
     "category": "Catégorie A (2 ans für SP) und 1 Zusatzjahr für FAT PP ambulant",
     "homepage": null,
@@ -52031,7 +52135,7 @@
     "canton": "AG",
     "plz": "5210",
     "city": "Windisch",
-    "director": "Herr Dr. med. Rafael Meyer",
+    "director": "Herr Dr. med. Rafael Serafin Meyer",
     "specialty": "Psychiatrie et psychothérapie",
     "category": "Catégorie C (2 ans) ambulant",
     "homepage": null,
@@ -52044,7 +52148,7 @@
     "canton": "AG",
     "plz": "5210",
     "city": "Windisch",
-    "director": "Herr Dr. med. Rafael Meyer",
+    "director": "Herr Dr. med. Rafael Serafin Meyer",
     "specialty": "Psychiatrie et psychothérapie",
     "category": "Catégorie C (2 ans) stationär",
     "homepage": null,
@@ -52148,7 +52252,7 @@
     "canton": "AG",
     "plz": "5210",
     "city": "Windisch",
-    "director": "Herr Dr. med. Rafael Meyer",
+    "director": "Herr Dr. med. Rafael Serafin Meyer",
     "specialty": "Psychiatrie et psychothérapie de la personne âgée",
     "category": "Catégorie A (2 ans für SP) und 1 Zusatzjahr für FAT PP, stationär und ambulant",
     "homepage": null,
@@ -52161,7 +52265,7 @@
     "canton": "AG",
     "plz": "5210",
     "city": "Windisch",
-    "director": "Herr Dr. med. Rafael Meyer",
+    "director": "Herr Dr. med. Rafael Serafin Meyer",
     "specialty": "Psychiatrie de consultation et de liaison",
     "category": "Catégorie B (1 an für SP) und 1 Zusatzjahr für FAT PP ambulant",
     "homepage": null,
@@ -55045,14 +55149,14 @@
     "id": 24445,
     "name": "Richard Nyffeler",
     "canton": "FR",
-    "plz": "1680",
-    "city": "Romont FR",
+    "plz": "1685",
+    "city": "Villariaz",
     "director": "Herr Dr. med. Richard Nyffeler",
     "specialty": "Médecine interne générale",
     "category": "Catégorie III (1 an)",
     "homepage": null,
-    "lat": 46.6942611,
-    "lng": 6.9134953999999995
+    "lat": 46.665154900000005,
+    "lng": 6.9465909
   },
   {
     "id": 22537,
@@ -64805,6 +64909,19 @@
     "lng": 7.5888186
   },
   {
+    "id": 28554,
+    "name": "Svetlana Paunovic",
+    "canton": "BE",
+    "plz": "3053",
+    "city": "Münchenbuchsee",
+    "director": "Frau Svetlana Paunovic",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie III (1 an)",
+    "homepage": null,
+    "lat": 47.0208393,
+    "lng": 7.4507584
+  },
+  {
     "id": 25770,
     "name": "Swiss Institute of Genomic Medicine",
     "canton": "GE",
@@ -66443,6 +66560,19 @@
     "lng": 9.1088612
   },
   {
+    "id": 28367,
+    "name": "Tobias Jakob",
+    "canton": "AG",
+    "plz": "5734",
+    "city": "Reinach AG",
+    "director": "Herr Tobias Jakob",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie III (1 an)",
+    "homepage": null,
+    "lat": 47.2501198,
+    "lng": 8.1836418
+  },
+  {
     "id": 26311,
     "name": "Tobias Johann Von Blumenthal",
     "canton": "ZH",
@@ -67847,19 +67977,6 @@
     "lng": 7.482010999999999
   },
   {
-    "id": 26679,
-    "name": "Universitäre Psychiatrische Dienste UPD",
-    "canton": "BE",
-    "plz": "3008",
-    "city": "Bern",
-    "director": "Frau Prof. Dr. med. Daniela Hubl",
-    "specialty": "Psychiatrie de consultation et de liaison",
-    "category": "Catégorie A (2 ans für SP) und 1 Zusatzjahr für FAT PP ambulant",
-    "homepage": null,
-    "lat": 46.9489051,
-    "lng": 7.4257859
-  },
-  {
     "id": 27511,
     "name": "Universitäre Psychiatrische Dienste UPD",
     "canton": "BE",
@@ -67884,6 +68001,19 @@
     "homepage": null,
     "lat": 46.967039,
     "lng": 7.482010999999999
+  },
+  {
+    "id": 28845,
+    "name": "Universitäre Psychiatrische Dienste UPD",
+    "canton": "BE",
+    "plz": "3008",
+    "city": "Bern",
+    "director": "Frau Kristina Adorjan",
+    "specialty": "Psychiatrie de consultation et de liaison",
+    "category": "Catégorie A (2 ans für SP) und 1 Zusatzjahr für FAT PP ambulant",
+    "homepage": null,
+    "lat": 46.9489051,
+    "lng": 7.4257859
   },
   {
     "id": 20500,
@@ -68414,6 +68544,19 @@
     "director": "Herr Patrick Freund",
     "specialty": "Médecine physique et réadaptation",
     "category": "Neurorehabilitation / Catégorie D1 (1 an)",
+    "homepage": null,
+    "lat": 47.3529543,
+    "lng": 8.5754919
+  },
+  {
+    "id": 28499,
+    "name": "Universitätsklinik Balgrist",
+    "canton": "ZH",
+    "plz": "8008",
+    "city": "Zürich",
+    "director": "Herr Patrick Freund",
+    "specialty": "Neurologie",
+    "category": "Catégorie C (1 an)",
     "homepage": null,
     "lat": 47.3529543,
     "lng": 8.5754919
@@ -70289,6 +70432,32 @@
     "homepage": null,
     "lat": 47.194056599999996,
     "lng": 7.5888496
+  },
+  {
+    "id": 28488,
+    "name": "Victoire Marie Emmanuelle Merz",
+    "canton": "VD",
+    "plz": "1196",
+    "city": "Gland",
+    "director": "Frau Victoire Marie Emmanuelle Merz",
+    "specialty": "Pédiatrie",
+    "category": "Cabinets médicaux (1 an)",
+    "homepage": null,
+    "lat": null,
+    "lng": null
+  },
+  {
+    "id": 28396,
+    "name": "Victor Pecoul",
+    "canton": "GE",
+    "plz": "1201",
+    "city": "Genève",
+    "director": "Herr Dr. med. Victor Pecoul",
+    "specialty": "Médecine interne générale",
+    "category": "Catégorie III (1 an)",
+    "homepage": null,
+    "lat": 46.210030800000006,
+    "lng": 6.1479907
   },
   {
     "id": 26119,
