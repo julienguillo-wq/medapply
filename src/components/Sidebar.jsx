@@ -11,7 +11,7 @@ const navItems = [
   { to: '/recherche', label: 'Recherche', icon: Icon.Map },
   { to: '/candidatures', label: 'Candidatures', icon: Icon.Send },
   { to: '/campagnes', label: 'Campagnes', icon: Icon.Layers },
-  { to: '/tableau-de-bord', label: 'Tableau de bord', icon: Icon.Grid },
+  { to: '/tableau-de-bord', label: 'Suivi', icon: Icon.Grid },
 ];
 
 export default function Sidebar({ open, onClose }) {
