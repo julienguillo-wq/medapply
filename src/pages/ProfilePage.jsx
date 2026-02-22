@@ -241,21 +241,6 @@ export default function ProfilePage() {
     ? allSpecialties.filter(s => s.name.toLowerCase().includes(specSearch.trim().toLowerCase()))
     : allSpecialties;
 
-  // Gender state
-  const [gender, setGender] = useState('');
-  const [genderSaving, setGenderSaving] = useState(false);
-
-  useEffect(() => {
-    if (authProfile?.gender) setGender(authProfile.gender);
-  }, [authProfile]);
-
-  const saveGender = async (value) => {
-    setGender(value);
-    setGenderSaving(true);
-    await updateProfile({ gender: value });
-    setGenderSaving(false);
-  };
-
   // Email SMTP config state
   const [smtpEmail, setSmtpEmail] = useState('');
   const [smtpPassword, setSmtpPassword] = useState('');
@@ -461,28 +446,6 @@ export default function ProfilePage() {
                 </div>
               </div>
             ))}
-            <div className="pt-2 border-t border-gray-100">
-              <div className="text-[11px] text-gray-400 uppercase tracking-wide mb-2">Genre</div>
-              <div className="flex gap-2">
-                {[
-                  { value: 'F', label: 'Femme' },
-                  { value: 'M', label: 'Homme' },
-                ].map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => saveGender(value)}
-                    disabled={genderSaving}
-                    className={`flex-1 px-3 py-2 rounded-lg text-[13px] font-medium transition-all cursor-pointer ${
-                      gender === value
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
           </Card>
         </div>
       </div>

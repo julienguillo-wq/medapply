@@ -106,22 +106,15 @@ export default function ApplicationModal({ establishment, existingCandidature, o
   const userName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || user?.email || '';
   const userSpecialty = profile?.specialty || '';
 
-  // Build signature title based on user gender
-  const signatureTitle = profile?.gender === 'F'
-    ? 'Médecin assistante'
-    : profile?.gender === 'M'
-      ? 'Médecin assistant'
-      : 'Médecin assistant(e)';
-
   function handleGenerate() {
     setLetter(`Cher ${salutation},
 
-Je m\u2019appelle Giulia Scattu et je souhaite d\u00e9poser ma candidature pour un poste de m\u00e9decin assistante au sein de votre service. J\u2019ai obtenu mon dipl\u00f4me en m\u00e9decine et chirurgie \u00e0 l\u2019Universit\u00e9 Vest Vasile Goldis d\u2019Arad (Roumanie) le 14 septembre 2024. D\u00e8s la fin de ma premi\u00e8re ann\u00e9e d\u2019\u00e9tudes, j\u2019ai effectu\u00e9 plusieurs stages pratiques dans des h\u00f4pitaux en Italie, en Roumanie et en Suisse. Plus r\u00e9cemment, j\u2019ai eu l\u2019opportunit\u00e9 d\u2019effectuer un stage \u00e0 l\u2019UGA de La Chaux-de-Fonds, ainsi que ma premi\u00e8re ann\u00e9e de formation en rotation entre le service de r\u00e9adaptation musculo squelettique et neurologique de Val-de-Ruz et l\u2019UGA de La Chaux-de-Fonds, et \u00e0 partir de Mai 2026 je serai dans le service des urgences de Neuch\u00e2tel. \u00c0 partir d\u2019octobre 2024, apr\u00e8s l\u2019obtention de mon dipl\u00f4me, je participerai \u00e9galement \u00e0 un stage organis\u00e9 par le Rotary en France, d\u2019abord en oncologie, puis en cardiologie \u00e0 Beauvais. Je souhaiterais vivement int\u00e9grer votre service en qualit\u00e9 de ${signatureTitle.toLowerCase()} \u00e0 partir du 1er Mai 2027.
+Je m\u2019appelle Giulia Scattu et je souhaite d\u00e9poser ma candidature pour un poste de m\u00e9decin assistante au sein de votre service. J\u2019ai obtenu mon dipl\u00f4me en m\u00e9decine et chirurgie \u00e0 l\u2019Universit\u00e9 Vest Vasile Goldis d\u2019Arad (Roumanie) le 14 septembre 2024. D\u00e8s la fin de ma premi\u00e8re ann\u00e9e d\u2019\u00e9tudes, j\u2019ai effectu\u00e9 plusieurs stages pratiques dans des h\u00f4pitaux en Italie, en Roumanie et en Suisse. Plus r\u00e9cemment, j\u2019ai eu l\u2019opportunit\u00e9 d\u2019effectuer un stage \u00e0 l\u2019UGA de La Chaux-de-Fonds, ainsi que ma premi\u00e8re ann\u00e9e de formation en rotation entre le service de r\u00e9adaptation musculo squelettique et neurologique de Val-de-Ruz et l\u2019UGA de La Chaux-de-Fonds, et \u00e0 partir de Mai 2026 je serai dans le service des urgences de Neuch\u00e2tel. \u00c0 partir d\u2019octobre 2024, apr\u00e8s l\u2019obtention de mon dipl\u00f4me, je participerai \u00e9galement \u00e0 un stage organis\u00e9 par le Rotary en France, d\u2019abord en oncologie, puis en cardiologie \u00e0 Beauvais. Je souhaiterais vivement int\u00e9grer votre service en qualit\u00e9 de m\u00e9decin assistante \u00e0 partir du 1er Mai 2027.
 
 En esp\u00e9rant que ma candidature retiendra votre attention, je reste \u00e0 votre disposition pour toute information compl\u00e9mentaire et je vous prie d\u2019agr\u00e9er, ${closing}, l\u2019expression de mes salutations distingu\u00e9es.
 
 ${userName}
-${signatureTitle}`);
+M\u00e9decin assistante`);
   }
 
   async function handleSaveDraft() {
