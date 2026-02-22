@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import Card from '../components/Card';
 import Badge from '../components/Badge';
 import Button from '../components/Button';
@@ -7,13 +7,16 @@ import SwitzerlandMap from '../components/SwitzerlandMap';
 import EstablishmentList from '../components/EstablishmentList';
 import CampaignModal from '../components/CampaignModal';
 import useSiwfData from '../hooks/useSiwfData';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function SearchPage() {
+  const { profile } = useAuth();
   const {
     loading,
     error,
     allSpecialties,
     selectedCantons,
+    setSelectedCantons,
     selectedSpecialties,
     searchQuery,
     setSearchQuery,
@@ -27,6 +30,16 @@ export default function SearchPage() {
     setSortBy,
     hasProfile,
   } = useSiwfData();
+
+  const preferredCantons = profile?.preferred_cantons || [];
+  const hasPreferred = preferredCantons.length > 0;
+
+  // Check if current selection matches preferred cantons exactly
+  const isPreferredActive = useMemo(() => {
+    if (!hasPreferred) return false;
+    if (selectedCantons.length !== preferredCantons.length) return false;
+    return preferredCantons.every(c => selectedCantons.includes(c));
+  }, [selectedCantons, preferredCantons, hasPreferred]);
 
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -111,11 +124,37 @@ export default function SearchPage() {
       <div className="grid grid-cols-1 md:grid-cols-[1fr_340px] gap-5 md:gap-7">
         {/* Map */}
         <Card>
-          <div className="flex justify-between items-center mb-5">
+          <div className="flex justify-between items-center mb-3">
             <h3 className="text-base font-semibold">Carte de la Suisse</h3>
             <Badge variant="primary">
               {selectedCantons.length} canton{selectedCantons.length > 1 ? 's' : ''} sélectionné{selectedCantons.length > 1 ? 's' : ''}
             </Badge>
+          </div>
+          <div className="flex items-center gap-2 mb-5">
+            <button
+              onClick={() => hasPreferred && setSelectedCantons([...preferredCantons])}
+              disabled={!hasPreferred}
+              title={hasPreferred ? 'Sélectionner mes cantons préférés' : 'Définissez vos cantons dans votre Profil'}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all cursor-pointer ${
+                !hasPreferred
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : isPreferredActive
+                    ? 'bg-primary text-white'
+                    : 'bg-primary/10 text-primary hover:bg-primary/20 border border-primary/30'
+              }`}
+            >
+              <span>⭐</span>
+              Mes cantons préférés
+            </button>
+            {selectedCantons.length > 0 && (
+              <button
+                onClick={() => setSelectedCantons([])}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all cursor-pointer"
+              >
+                <Icon.X size={13} />
+                Tout désélectionner
+              </button>
+            )}
           </div>
           {loading ? (
             <div className="aspect-[460/440] bg-gray-50 rounded-xl animate-pulse" />
